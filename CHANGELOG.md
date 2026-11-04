@@ -1,5 +1,9 @@
 # ConsentMate Changelog
 
+## 1.0.2 - 2026-11-04
+### Fixed
+- Fixed cookie names breaking every few characters in narrow cookie tables, like the settings dialog on phones
+
 ## 1.0.1 - 2026-11-04
 ### Changed
 - Changed the default stylesheet to reset the elements in ConsentMate's markup, so global element styles on the site (`p`, `h2`, `li`, `label`, `button`) no longer change the banner, the settings dialog, placeholders and service boxes
