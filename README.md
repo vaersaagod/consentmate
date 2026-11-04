@@ -145,7 +145,7 @@ The built-in presets:
 | Google reCAPTCHA | `recaptcha` | Strictly necessary | |
 | Adobe Fonts | `adobeFonts` | Strictly necessary | |
 
-The cookie lists were checked against the vendors' documentation and live tests in October 2026. Vendors change them, so look over a service's cookies now and then, and keep an eye on the cookie report. Google Tag Manager isn't a preset: it's set up in the config (`googleTagManager`), since it loads for more than one category.
+The cookie lists were checked against the vendors' documentation and live tests in October 2026, and rechecked in November 2026. When a vendor changes its cookies, the preset is updated in a plugin release, and services made from it follow (see [Keeping cookies up to date](#keeping-cookies-up-to-date)). Google Tag Manager isn't a preset: it's set up in the config (`googleTagManager`), since it loads for more than one category.
 
 Add your own presets, change built-in ones or remove them in the config. Each one takes the same keys as the files in `src/presets`:
 
@@ -169,6 +169,26 @@ Add your own presets, change built-in ones or remove them in the config. Each on
 ```
 
 Field patterns are required and should be strict: the value is put into the code as is.
+
+### Keeping cookies up to date
+
+A service remembers the cookies its preset gave it. When the preset's cookies change, the service's cookie list follows, without touching the client's own changes:
+
+- A cookie the client hasn't changed follows the preset: it's updated, or removed if the preset dropped it.
+- A cookie the client changed or deleted stays as the client left it.
+- A cookie new to the preset is added, unless the service already has one by that name.
+- Cookies the client added are never touched.
+
+Only the cookies are updated. The name, purpose, privacy policy and data transfers stay as they are. The service's Cookies field says what the last update changed.
+
+Visitors aren't asked again, and the consent log keeps a snapshot of what each visitor was shown. If a change matters to visitors, for example a cookie that shares data with someone new, use "Ask everyone again" on the Services page.
+
+Updates to the built-in presets are applied by the plugin's migrations when you update it. After changing your own presets in the config, run:
+
+```bash
+php craft consentmate/presets/sync --dry-run   # what would change
+php craft consentmate/presets/sync
+```
 
 ### Moving a site over
 
