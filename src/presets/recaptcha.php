@@ -11,7 +11,7 @@ return [
     'name' => 'Google reCAPTCHA',
     'category' => 'necessary',
     'provider' => 'Google Cloud EMEA Limited',
-    'privacyPolicyUrl' => 'https://cloud.google.com/terms/cloud-privacy-notice',
+    'privacyPolicyUrl' => 'https://cloud.google.com/terms/data-processing-addendum',
     'dataTransfers' => 'USA (EU-US Data Privacy Framework)',
     'description' => 'Protects our forms against spam and abuse by checking that the visitor is a human.',
     'cookies' => [
@@ -19,5 +19,5 @@ return [
         ['name' => '_grecaptcha', 'type' => 'localStorage', 'party' => 'first', 'unit' => 'persistent'],
         ['name' => 'rc::a', 'type' => 'localStorage', 'party' => 'third', 'unit' => 'persistent'],
     ],
-    'notes' => 'Listed as Strictly necessary because forms don\'t work without it, but this is disputed: some data protection authorities say reCAPTCHA needs consent. Loading it from www.recaptcha.net instead of www.google.com avoids sending Google\'s cookies.',
+    'notes' => 'Listed as Strictly necessary because forms don\'t work without it, but this is disputed: some data protection authorities say reCAPTCHA needs consent. Loading it from www.recaptcha.net instead of www.google.com avoids sending the visitor\'s other Google cookies, but reCAPTCHA still sets its own. If the Google Cloud account is billed in France, Italy or Poland, the provider is Google Cloud\'s local company there (see cloud.google.com/terms/google-entity).',
 ];

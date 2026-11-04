@@ -20,5 +20,5 @@ return [
         ['name' => 'mapbox.eventData.uuidTimestamp:*', 'type' => 'localStorage', 'party' => 'first', 'unit' => 'persistent'],
         ['name' => 'mapbox.eventData:*', 'type' => 'localStorage', 'party' => 'first', 'unit' => 'persistent'],
     ],
-    'notes' => 'Mapbox is usually bundled in the site\'s own JavaScript, so the developer has to start the map only once this category is allowed, using the consent JavaScript API. Use Strictly necessary instead only if the map is the core of the page.',
+    'notes' => 'If Mapbox GL JS is bundled in the site\'s own JavaScript, the developer has to start the map only once this category is allowed, using the consent JavaScript API. If it\'s loaded from Mapbox\'s CDN, gate the script and stylesheet tags with the preset handle "mapbox" too, since loading them sends the visitor\'s IP address to Mapbox. Use Strictly necessary instead only if the map is the core of the page.',
 ];

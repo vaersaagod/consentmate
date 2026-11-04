@@ -26,11 +26,11 @@ return [
         'hubId' => [
             'label' => 'Hub ID',
             'placeholder' => '12345678',
-            'pattern' => '/^[1-9][0-9]{3,9}$/',
+            'pattern' => '/^[1-9][0-9]{0,9}$/',
         ],
     ],
     'bodyCode' => <<<'HTML'
 <script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/{hubId}.js"></script>
 HTML,
-    'notes' => 'Turn off HubSpot\'s own cookie banner in HubSpot, or visitors get two banners. messagesUtk is only set when HubSpot chat is used.',
+    'notes' => 'Turn off HubSpot\'s own cookie banner in HubSpot, or visitors get two banners. messagesUtk is only set when HubSpot chat is used. If ad pixels are set up in HubSpot\'s ads tool, HubSpot also loads them (Meta, LinkedIn, Google), and they set their own cookies: add them as services from their presets.',
 ];

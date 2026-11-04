@@ -12,7 +12,7 @@ return [
     'category' => 'statistics',
     'provider' => 'Conva Ventures Inc.',
     'privacyPolicyUrl' => 'https://usefathom.com/privacy',
-    'dataTransfers' => 'Canada and USA (anonymised data only; IP addresses are removed on EU servers)',
+    'dataTransfers' => 'USA (anonymised data only; EU visitors\' IP addresses are removed on EU servers first)',
     'description' => 'Counts how many people visit the website and which pages they view, without cookies and without storing personal data.',
     'cookies' => [],
     'fields' => [

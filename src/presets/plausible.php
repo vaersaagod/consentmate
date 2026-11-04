@@ -13,7 +13,7 @@ return [
     'provider' => 'Plausible Insights OÜ',
     'privacyPolicyUrl' => 'https://plausible.io/data-policy',
     'dataTransfers' => 'None (EU only)',
-    'description' => 'Counts how many people visit the website and which pages they view, without cookies and without collecting personal data.',
+    'description' => 'Counts how many people visit the website and which pages they view, without cookies and without storing personal data.',
     'cookies' => [],
     'fields' => [
         'scriptId' => [

@@ -24,14 +24,21 @@ return [
         ['name' => 'UserMatchHistory', 'type' => 'cookie', 'party' => 'third', 'duration' => 30, 'unit' => 'days'],
         ['name' => 'AnalyticsSyncHistory', 'type' => 'cookie', 'party' => 'third', 'duration' => 30, 'unit' => 'days'],
         ['name' => 'li_gc', 'type' => 'cookie', 'party' => 'third', 'duration' => 6, 'unit' => 'months'],
+        ['name' => 'li_mc', 'type' => 'cookie', 'party' => 'third', 'duration' => 6, 'unit' => 'months'],
+        ['name' => 'lms_ads', 'type' => 'cookie', 'party' => 'third', 'duration' => 30, 'unit' => 'days'],
+        ['name' => 'lms_analytics', 'type' => 'cookie', 'party' => 'third', 'duration' => 30, 'unit' => 'days'],
+        ['name' => '_guid', 'type' => 'cookie', 'party' => 'third', 'duration' => 90, 'unit' => 'days'],
+        ['name' => 'ar_debug', 'type' => 'cookie', 'party' => 'third', 'unit' => 'session'],
+        ['name' => '__cf_bm', 'type' => 'cookie', 'party' => 'third', 'duration' => 30, 'unit' => 'minutes'],
     ],
     'fields' => [
         'partnerId' => [
             'label' => 'Partner ID',
             'placeholder' => '1234567',
-            'pattern' => '/^[1-9][0-9]{4,9}$/',
+            'pattern' => '/^[1-9][0-9]{0,9}$/',
         ],
     ],
+    'notes' => 'If the Insight Tag is loaded through Google Tag Manager, leave the partner ID empty. The service then only declares the cookies.',
     'bodyCode' => <<<'HTML'
 <script type="text/javascript">
 _linkedin_partner_id = "{partnerId}";

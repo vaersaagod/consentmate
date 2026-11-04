@@ -19,8 +19,9 @@ return [
         ['name' => 'attribution_user_id', 'type' => 'cookie', 'party' => 'third', 'duration' => 1, 'unit' => 'years'],
         ['name' => 'AWSALBTGCORS', 'type' => 'cookie', 'party' => 'third', 'duration' => 7, 'unit' => 'days'],
         ['name' => 'tf_random_id', 'type' => 'localStorage', 'party' => 'third', 'unit' => 'persistent'],
+        ['name' => '*-visitorId', 'type' => 'localStorage', 'party' => 'third', 'unit' => 'persistent'],
         ['name' => 'rl_*', 'type' => 'localStorage', 'party' => 'third', 'unit' => 'persistent'],
         ['name' => 'rudder.*', 'type' => 'localStorage', 'party' => 'third', 'unit' => 'persistent'],
     ],
-    'notes' => 'Gate Typeform embeds in templates with the preset handle "typeform".',
+    'notes' => 'Gate Typeform embeds in templates with the preset handle "typeform". Enterprise accounts can keep their data in Typeform\'s EU data centre. Then nothing is transferred to the USA, so clear Data transfers.',
 ];

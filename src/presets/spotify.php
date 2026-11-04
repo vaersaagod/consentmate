@@ -11,7 +11,7 @@ return [
     'category' => 'marketing',
     'provider' => 'Spotify AB',
     'privacyPolicyUrl' => 'https://www.spotify.com/legal/privacy-policy/',
-    'dataTransfers' => 'Countries outside the EU/EEA, including the USA (Standard Contractual Clauses)',
+    'dataTransfers' => 'Countries outside the EU/EEA (adequacy decisions and Standard Contractual Clauses)',
     'description' => 'Plays music and podcasts from Spotify on the website. Spotify may recognise your browser and collect information about what you play.',
     'cookies' => [
         ['name' => 'sp_t', 'type' => 'cookie', 'party' => 'third', 'duration' => 1, 'unit' => 'years'],

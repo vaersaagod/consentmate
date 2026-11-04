@@ -17,5 +17,5 @@ return [
     'cookies' => [
         ['name' => 'p.typekit.net', 'type' => 'pixel', 'party' => 'third', 'unit' => 'session'],
     ],
-    'notes' => 'Listed as Strictly necessary since the site needs its fonts, but Adobe receives visitors\' IP addresses. Self-hosting the fonts avoids that, where the font licence allows it.',
+    'notes' => 'Listed as Strictly necessary since the site needs its fonts, but Adobe receives visitors\' IP addresses. Adobe Fonts\' licence doesn\'t allow self-hosting; to self-host, buy a web licence from the foundry.',
 ];

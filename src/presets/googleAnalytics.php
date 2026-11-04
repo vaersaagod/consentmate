@@ -35,5 +35,5 @@ gtag('js', new Date());
 gtag('config', '{measurementId}');
 </script>
 HTML,
-    'notes' => 'If Google Analytics is loaded through Google Tag Manager, leave the measurement ID empty. The service then only declares the cookies.',
+    'notes' => 'If Google Analytics is loaded through Google Tag Manager, leave the measurement ID empty. The service then only declares the cookies. _gcl_au is only set when the Analytics property is linked to Google Ads.',
 ];
