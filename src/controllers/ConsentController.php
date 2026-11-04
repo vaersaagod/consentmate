@@ -81,8 +81,10 @@ class ConsentController extends Controller
 
         $this->_rateLimit();
 
+        $payload = $this->request->getBodyParams();
+
         try {
-            $consent = $plugin->getConsents()->save($this->request->getBodyParams(), $site);
+            $consent = $plugin->getConsents()->save($payload, $site);
         } catch (InvalidArgumentException $e) {
             throw new BadRequestHttpException($e->getMessage(), 0, $e);
         }
@@ -93,8 +95,8 @@ class ConsentController extends Controller
             $plugin->getCookieReports()->record(
                 $site,
                 array_keys($_COOKIE),
-                $this->request->getBodyParam('previous'),
-                (string)parse_url((string)$this->request->getBodyParam('path', ''), PHP_URL_PATH)
+                $payload['previous'] ?? null,
+                \is_string($payload['path'] ?? null) ? (string)parse_url($payload['path'], PHP_URL_PATH) : null
             );
         } catch (\Throwable $e) {
             Craft::warning('Couldn\'t record the cookie report: ' . $e->getMessage(), __METHOD__);

@@ -57,13 +57,13 @@ class Consents extends Component
         $plugin = ConsentMate::getInstance();
         $settings = $plugin->getSettings();
 
-        $consentId = strtolower((string)($payload['consentId'] ?? ''));
+        $consentId = strtolower($this->_string($payload['consentId'] ?? null));
 
         if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/', $consentId)) {
             throw new InvalidArgumentException('Invalid consent ID.');
         }
 
-        $action = (string)($payload['action'] ?? '');
+        $action = $this->_string($payload['action'] ?? null);
 
         if (!\in_array($action, self::ACTIONS, true)) {
             throw new InvalidArgumentException('Invalid action.');
@@ -85,7 +85,7 @@ class Consents extends Component
         // A page can be older than the current revision (a cached page), but
         // never newer
         $currentRevision = $plugin->getRevisions()->getCurrentRevision();
-        $revision = max(1, min((int)($payload['revision'] ?? $currentRevision), $currentRevision));
+        $revision = max(1, min(is_numeric($payload['revision'] ?? null) ? (int)$payload['revision'] : $currentRevision, $currentRevision));
 
         $consent = [
             'consentId' => $consentId,
@@ -101,15 +101,15 @@ class Consents extends Component
             return $consent;
         }
 
-        $snapshotHash = (string)($payload['snapshot'] ?? '');
+        $snapshotHash = $this->_string($payload['snapshot'] ?? null);
         $snapshotId = preg_match('/^[0-9a-f]{40}$/', $snapshotHash)
             ? $plugin->getSnapshots()->getIdByHash($snapshotHash)
             : null;
 
-        $path = (string)($payload['path'] ?? '');
+        $path = $this->_string($payload['path'] ?? null);
         $path = mb_substr((string)parse_url($path, PHP_URL_PATH), 0, 255);
 
-        $language = (string)($payload['language'] ?? '');
+        $language = $this->_string($payload['language'] ?? null);
         $language = preg_match('/^[a-zA-Z]{2,3}([-_][a-zA-Z0-9]{2,8})?$/', $language) ? $language : $site->language;
 
         $request = Craft::$app->getRequest();
@@ -124,7 +124,7 @@ class Consents extends Component
             'action' => $action,
             // JSON columns are encoded by the query builder
             'categories' => $granted,
-            'gpc' => (bool)($payload['gpc'] ?? false),
+            'gpc' => ($payload['gpc'] ?? false) === true,
             'path' => $path !== '' ? $path : null,
             'language' => mb_substr($language, 0, 12),
             'userAgent' => $userAgent !== '' ? $userAgent : null,
@@ -378,5 +378,17 @@ class Consents extends Component
         $row['gpc'] = (bool)($row['gpc'] ?? false);
 
         return $row;
+    }
+
+    /**
+     * Returns a posted value as a string. Anything that isn't a string or a
+     * number (an array, an object) is treated as empty.
+     *
+     * @param mixed $value
+     * @return string
+     */
+    private function _string(mixed $value): string
+    {
+        return \is_string($value) || \is_int($value) || \is_float($value) ? (string)$value : '';
     }
 }
