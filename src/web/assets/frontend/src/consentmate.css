@@ -385,7 +385,11 @@ html[data-consentmate="pending"] {
     vertical-align: top;
 }
 
+/* Room for most names on one line (_ga_6EFXV60TPF, CraftSessionId). Longer
+   ones, like Craft's hashed identity cookie, break */
 .consentmate-cookies code {
+    display: inline-block;
+    min-width: 14ch;
     word-break: break-all;
 }
 
