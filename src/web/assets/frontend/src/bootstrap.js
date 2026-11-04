@@ -56,6 +56,10 @@
         gpc: !!config.gpc && navigator.globalPrivacyControl === true,
     };
 
+    // What an out-of-date consent (from before the services changed) granted.
+    // It isn't applied, but its cookies may still be there.
+    const previous = stored && !given ? unique(stored.c.filter((handle) => handles.indexOf(handle) !== -1)) : [];
+
     d.documentElement.setAttribute('data-consentmate', given ? 'done' : 'pending');
 
     // Google Consent Mode. gtag() only pushes to the dataLayer, so it's safe
@@ -218,6 +222,7 @@
             required,
             handles,
             unique,
+            previous,
         },
     };
 })();

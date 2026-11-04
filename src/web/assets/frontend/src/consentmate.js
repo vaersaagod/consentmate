@@ -231,6 +231,10 @@
     // Saving
     // =========================================================================
 
+    // Goes by the latest choice, since an earlier save can finish after the
+    // visitor has made a new one
+    const deleteDenied = () => deleteStorage(handles.filter((handle) => state.granted.indexOf(handle) === -1));
+
     const send = (action, previous) => {
         if (!config.endpoint || typeof w.fetch !== 'function') {
             return Promise.resolve();
@@ -265,7 +269,10 @@
 
     const save = (action, next) => {
         const granted = unique(required.concat(next.filter((handle) => handles.indexOf(handle) !== -1)));
-        const previous = state.given ? state.granted.slice() : required.slice();
+        // What was granted before this choice, including an out-of-date
+        // consent's categories, since their cookies can still be there
+        const previous = unique(required.concat(state.given ? state.granted : (internals.previous || [])));
+        // What was active on this page and is now turned off
         const withdrawn = state.given ? state.granted.filter((handle) => granted.indexOf(handle) === -1) : [];
 
         state.id = state.id || uuid();
@@ -285,6 +292,12 @@
 
         const request = send(withdrawn.length ? 'withdraw' : action, previous);
 
+        // Cookies of categories that aren't granted are deleted, whether
+        // they're from a withdrawn or out-of-date consent or were set without
+        // consent. Not until the save is sent, since the cookie report reads
+        // them from that request.
+        const cleanUp = request.then(deleteDenied);
+
         showBanner(false);
 
         if (dialog && dialog.open) {
@@ -294,18 +307,17 @@
         updateStatus();
         emit('change', publicState());
 
-        if (withdrawn.length) {
-            deleteStorage(withdrawn);
+        if (withdrawn.length && config.reload) {
+            // Scripts that already ran can't be unloaded. Reload once the
+            // choice is saved, or after a second at most.
+            const reload = () => {
+                deleteDenied();
+                w.location.reload();
+            };
+            cleanUp.then(reload);
+            w.setTimeout(reload, 1000);
 
-            if (config.reload) {
-                // Scripts that already ran can't be unloaded. Reload once the
-                // choice is saved, or after a second at most.
-                const reload = () => w.location.reload();
-                request.then(reload);
-                w.setTimeout(reload, 1000);
-
-                return;
-            }
+            return;
         }
 
         internals.loadGoogleTags(granted);
