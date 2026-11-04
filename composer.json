@@ -3,6 +3,7 @@
     "description": "No means no, mate!",
     "type": "craft-plugin",
     "version": "1.0.0",
+    "license": "proprietary",
     "require": {
         "php": "^8.2.0",
         "craftcms/cms": "^5.6.0"

@@ -1,6 +1,6 @@
 # ConsentMate Changelog
 
-## 1.0.0-alpha.1 - Unreleased
+## 1.0.0 - 2026-11-04
 ### Added
 - Added the consent banner and settings dialog, with Accept all, Reject all and Settings on the first layer
 - Added the Service element type, for tracking services with their scripts and cookies, enabled per site
