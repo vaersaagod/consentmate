@@ -46,15 +46,13 @@ class TextsController extends Controller
     /**
      * Renders the texts form for the requested site.
      *
-     * @param array|null $texts Posted texts, when a save failed
-     * @param array $errors Validation errors, when a save failed
      * @return Response
      * @throws ForbiddenHttpException
      *
      * @author    Værsågod
      * @since     1.0.0
      */
-    public function actionIndex(?array $texts = null, array $errors = []): Response
+    public function actionIndex(): Response
     {
         $site = Cp::requestedSite();
 
@@ -66,8 +64,14 @@ class TextsController extends Controller
         $values = $service->getTexts($site->id);
         $categories = $service->getCategories($site->id);
 
-        // Show what was posted when a save failed
-        if ($texts !== null) {
+        // What was posted when a save failed. Read from the route params set
+        // by actionSave(), not from action params, which the query string
+        // could fill with someone else's copy.
+        $routeParams = Craft::$app->getUrlManager()->getRouteParams();
+        $texts = $routeParams['texts'] ?? null;
+        $errors = $routeParams['errors'] ?? [];
+
+        if (\is_array($texts)) {
             foreach ($values as $key => $value) {
                 if ($key !== 'categories' && isset($texts[$key]) && \is_string($texts[$key])) {
                     $values[$key] = $texts[$key];
@@ -89,7 +93,7 @@ class TextsController extends Controller
             'site' => $site,
             'fieldDefinitions' => $service->getFieldDefinitions(),
             'texts' => $values,
-            'errors' => $errors,
+            'errors' => \is_array($errors) ? $errors : [],
             'defaults' => $service->getDefaults($site->language),
             'categories' => $categories,
         ]);
