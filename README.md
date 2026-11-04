@@ -253,6 +253,15 @@ Theme the default banner with CSS custom properties:
 }
 ```
 
+Override single rules with class selectors in your own CSS, which loads after the `consentmateHead` hook and so wins at the same specificity:
+
+```css
+.consentmate-button { border-width: 1px; background: transparent; color: inherit; }
+.consentmate-heading { font-size: 1.25rem; }
+```
+
+The stylesheet resets the elements in ConsentMate's markup (`p`, `h2`, `li`, `label`, `button` and so on) with selectors that count as one class. The site's global element styles, like `p { font-size: 24px }`, don't reach the banner, while any class selector still overrides it. The toggles use `.consentmate-switch[type="checkbox"]`, so global checkbox styles don't reach them either; restyle them with that selector. In the cookie declaration, only the service boxes and buttons are styled by ConsentMate. Its headings and paragraphs look like the rest of the page.
+
 Or copy `src/templates/_frontend/banner.twig` into your project, point `bannerTemplate` at it, and set `includeCss` to `false` to style it from scratch. Keep the `data-consentmate-*` attributes; the comment at the top of the template lists them.
 
 Keep the Accept all, Reject all and Settings buttons on the first layer, and make them equally prominent. Regulators treat a less visible reject option as invalid consent.
