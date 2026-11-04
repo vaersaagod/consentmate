@@ -235,32 +235,72 @@
     // visitor has made a new one
     const deleteDenied = () => deleteStorage(handles.filter((handle) => state.granted.indexOf(handle) === -1));
 
+    // Each response sets the cookie, so a save still on its way is aborted
+    // when the visitor makes a new choice. Its response could otherwise
+    // arrive last (even after a reload) and bring back the earlier choice.
+    // Saves aren't sent with keepalive, since browsers don't cancel aborted
+    // keepalive requests; one still on its way when the visitor leaves the
+    // page is sent again with keepalive instead (see init()).
+    let pending = null;
+
+    const post = (body, keepalive, signal) => w.fetch(config.endpoint, {
+        method: 'POST',
+        credentials: 'same-origin',
+        keepalive,
+        headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+        },
+        body,
+        signal,
+    });
+
     const send = (action, previous) => {
         if (!config.endpoint || typeof w.fetch !== 'function') {
             return Promise.resolve();
         }
 
-        return w.fetch(config.endpoint, {
-            method: 'POST',
-            credentials: 'same-origin',
-            keepalive: true,
-            headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-            },
-            body: JSON.stringify({
-                consentId: state.id,
-                categories: state.granted,
-                // What was granted before this choice, for the cookie report
-                previous,
-                action,
-                revision: state.revision,
-                snapshot: config.snapshot,
-                gpc: state.gpc,
-                path: w.location.pathname,
-                language: d.documentElement.lang || '',
-            }),
-        }).catch(() => {});
+        const body = JSON.stringify({
+            consentId: state.id,
+            categories: state.granted,
+            // What was granted before this choice, for the cookie report
+            previous,
+            action,
+            revision: state.revision,
+            snapshot: config.snapshot,
+            gpc: state.gpc,
+            path: w.location.pathname,
+            language: d.documentElement.lang || '',
+        });
+
+        if (pending && pending.controller) {
+            pending.controller.abort();
+        }
+
+        const controller = typeof w.AbortController === 'function' ? new w.AbortController() : null;
+        const current = { body, controller };
+        pending = current;
+
+        return post(body, false, controller ? controller.signal : undefined).catch(() => {}).then(() => {
+            if (pending === current) {
+                pending = null;
+            }
+        });
+    };
+
+    const sendPendingOnLeave = () => {
+        if (!pending) {
+            return;
+        }
+
+        const { body, controller } = pending;
+        pending = null;
+
+        if (controller) {
+            controller.abort();
+        }
+
+        post(body, true).catch(() => {});
     };
 
     let banner = null;
@@ -511,6 +551,7 @@
         }
 
         d.addEventListener('click', onClick);
+        w.addEventListener('pagehide', sendPendingOnLeave);
 
         trackBannerHeight();
         showBanner(!state.given);

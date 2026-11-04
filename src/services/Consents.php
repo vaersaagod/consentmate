@@ -97,7 +97,7 @@ class Consents extends Component
 
         $log = $settings->getLog();
 
-        if (!$log['enabled']) {
+        if (!$log['enabled'] || $this->_isRepeat($consent, $site->id)) {
             return $consent;
         }
 
@@ -378,6 +378,36 @@ class Consents extends Component
         $row['gpc'] = (bool)($row['gpc'] ?? false);
 
         return $row;
+    }
+
+    /**
+     * Returns whether a consent repeats the visitor's last logged choice from
+     * the last minute. The runtime sends a save again when the visitor leaves
+     * the page while it's on its way, so the server can get it twice.
+     *
+     * @param array{consentId: string, categories: string[], action: string, revision: int, timestamp: int} $consent
+     * @param int $siteId
+     * @return bool
+     */
+    private function _isRepeat(array $consent, int $siteId): bool
+    {
+        $last = (new Query())
+            ->select(['action', 'categories', 'revision', 'dateCreated'])
+            ->from(Table::CONSENTS)
+            ->where(['consentId' => $consent['consentId'], 'siteId' => $siteId])
+            ->orderBy(['id' => SORT_DESC])
+            ->one();
+
+        if (!$last) {
+            return false;
+        }
+
+        $categories = Json::decodeIfJson($last['categories'] ?? '[]');
+
+        return $last['action'] === $consent['action']
+            && (int)$last['revision'] === $consent['revision']
+            && $categories === $consent['categories']
+            && Carbon::createFromFormat('Y-m-d H:i:s', $last['dateCreated'], 'UTC')->greaterThan(Carbon::now('UTC')->subMinute());
     }
 
     /**
