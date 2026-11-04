@@ -1,5 +1,11 @@
 # ConsentMate Changelog
 
+## 1.0.3 - 2026-11-04
+### Fixed
+- Fixed searching and filtering the consent log returning a 404
+- Fixed the consent log table sitting right under the search bar
+- Fixed the revisions table in the consent log not using the full width
+
 ## 1.0.2 - 2026-11-04
 ### Fixed
 - Fixed cookie names breaking every few characters in narrow cookie tables, like the settings dialog on phones
