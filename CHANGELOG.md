@@ -8,7 +8,7 @@
 - Added gating of markup with the `{% consent %}` tag and `|consent` filter, with optional placeholders
 - Added the consent cookie, re-set by the server so it isn't capped by Safari
 - Added consent revisions, asking everyone again when a service is enabled or moved, or on demand
-- Added the consent log with snapshots of what visitors were shown, and retention through garbage collection
+- Added the consent log with snapshots of what visitors were shown, and retention through garbage collection and the `consentmate/purge` command
 - Added the cookie declaration (`craft.consentmate.declaration()`)
 - Added Google Consent Mode v2, loading of Google Tag Manager or a Google tag after consent, and Microsoft UET and Meta consent signals
 - Added Global Privacy Control support

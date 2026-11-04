@@ -52,7 +52,7 @@ ConsentMate is a tool. The client is the data controller and is responsible for 
 - **Nothing optional runs before consent.** Gated markup is output inside `<template data-consentmate="category">` elements. Browsers never run or load what's inside a `<template>`, so without consent (or without JavaScript) nothing happens. When a category is granted, the runtime inserts the markup and runs its scripts in order.
 - **The consent cookie** (`consentmate`) holds a consent ID, the granted categories, the revision and a timestamp. The runtime writes it right away, then posts the choice to the server, which logs it and sets the same cookie again from the server. Safari caps cookies set from JavaScript at 7 days; the server copy keeps it for its full lifetime.
 - **Revisions.** Consent is given for a revision. Enabling a new service, or moving one to another category, bumps the revision (configurable), and everyone is asked again. Clients can also bump it with "Ask everyone again" on the Services page.
-- **Proof of consent.** Every choice is logged with the consent ID, the granted categories, the site, the page, the language and a snapshot of the texts and services the visitor was shown. Visitors can find their consent ID in the settings dialog and on the declaration.
+- **Proof of consent.** Every choice is logged with the consent ID, the granted categories, the site, the page, the language and a snapshot of the texts and services the visitor was shown. Visitors can find their consent ID in the settings dialog and on the declaration. Log rows are deleted after `log.retention` (24 months by default) by `php craft consentmate/purge`. Craft's garbage collection does the same, but only on a small share of requests, so run the command daily from cron.
 - **Withdrawal.** When a category is turned off, the first-party cookies and storage declared on its services are deleted, and the page reloads so scripts that already ran are gone.
 - **Static caching.** CacheMate and Blitz are purged automatically when services, texts or the revision change. For other caches, listen to `Caches::EVENT_AFTER_CHANGE`.
 
@@ -179,7 +179,7 @@ ConsentMate keeps an eye on the declaration for you. When visitors save their co
 - **Set without consent**: declared cookies that were present while their category wasn't granted. Something sets them before consent, usually a script added straight to a template instead of to a service or inside `{% consent %}`. This is the kind of problem regulators fine for, so fix it, then clear the report.
 - **Not declared**: cookies no service declares. Add each one to the service that sets it (straight from the report), or ignore it. When a cookie belongs to a preset, the report suggests it: "Create service" makes a service from the preset, or the existing one is preselected.
 
-The nav item shows a badge with the number of open issues. Reports not seen for 90 days are deleted when Craft collects garbage, and ignored ones are kept so they stay ignored.
+The nav item shows a badge with the number of open issues. Reports not seen for 90 days are deleted by `php craft consentmate/purge` (or when Craft collects garbage), and ignored ones are kept so they stay ignored.
 
 Cookies set by other websites (like YouTube's) are never sent to this website, so they can't be checked; declare them by hand. Craft's control panel cookies are left out. Add others that aren't set for visitors (like a CDN's) to `cookieReport.ignore` in the config.
 
@@ -296,6 +296,7 @@ ConsentMate is configured in `config/consentmate.php`. See [src/config.php](src/
 - [ ] The Texts are checked in every site language, and the company name is filled in.
 - [ ] Inside Google Tag Manager, every tag has the right consent checks.
 - [ ] Static caches are purged when services change (CacheMate and Blitz are automatic).
+- [ ] `php craft consentmate/purge` runs daily from cron, so the log retention holds.
 - [ ] After launch, the cookie report is empty, or every item in it is handled.
 
 ## What it doesn't do (yet)
