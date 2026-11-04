@@ -55,6 +55,9 @@
 
     const activated = [];
 
+    // How long an external script can hold up the scripts after it
+    const scriptTimeout = 10000;
+
     const loadScriptInOrder = (original, marker) => new Promise((resolve) => {
         const script = d.createElement('script');
 
@@ -69,19 +72,24 @@
 
         if (original.src) {
             const isAsync = original.hasAttribute('async');
+            // Browsers that support modules skip nomodule scripts without
+            // firing load or error
+            const isSkipped = original.hasAttribute('nomodule') && 'noModule' in script;
             script.async = isAsync;
 
-            if (!isAsync) {
+            if (!isAsync && !isSkipped) {
                 // Wait for external scripts before running the next one, so
                 // snippets like <script src=lib.js> + <script>Lib.init()</script>
-                // run in order
+                // run in order. A script that never loads (or has a type
+                // the browser doesn't run) only holds the rest up for a while.
                 script.onload = () => resolve();
                 script.onerror = () => resolve();
+                w.setTimeout(resolve, scriptTimeout);
             }
 
             marker.parentNode.replaceChild(script, marker);
 
-            if (isAsync) {
+            if (isAsync || isSkipped) {
                 resolve();
             }
 
@@ -428,6 +436,17 @@
         }
     };
 
+    const formatDate = (timestamp) => {
+        const date = new Date(timestamp * 1000);
+
+        try {
+            return date.toLocaleString(d.documentElement.lang || undefined);
+        } catch (e) {
+            // An invalid lang attribute, like nb_NO
+            return date.toLocaleString();
+        }
+    };
+
     const updateStatus = () => {
         d.querySelectorAll('[data-consentmate-status]').forEach((element) => {
             element.querySelectorAll('[data-consentmate-status-given]').forEach((given) => {
@@ -443,9 +462,7 @@
             });
 
             element.querySelectorAll('[data-consentmate-status-date]').forEach((date) => {
-                date.textContent = state.timestamp
-                    ? new Date(state.timestamp * 1000).toLocaleString(d.documentElement.lang || undefined)
-                    : '';
+                date.textContent = state.timestamp ? formatDate(state.timestamp) : '';
             });
 
             element.querySelectorAll('[data-consentmate-status-categories]').forEach((list) => {
