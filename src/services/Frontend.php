@@ -307,7 +307,7 @@ class Frontend extends Component
         $plugin = ConsentMate::getInstance();
 
         return Craft::$app->getCache()->getOrSet(
-            "consentmate:site-data:{$plugin->getVersion()}:{$this->_configFingerprint()}:$siteId",
+            "consentmate:site-data:{$plugin->getVersion()}:{$this->getConfigFingerprint()}:$siteId",
             fn() => $this->_buildSiteData($siteId),
             null,
             $plugin->getCaches()->getDependency()
@@ -342,6 +342,37 @@ class Frontend extends Component
         $this->_nonce = \is_string($nonce) && $nonce !== '' ? $nonce : false;
 
         return $this->_nonce ?: null;
+    }
+
+    /**
+     * Returns a hash of the config that cached data is built from: the
+     * plugin settings, and the Craft settings that name the built-in cookies.
+     * Part of the cache keys, so config changes show right away.
+     *
+     * @return string
+     *
+     * @author    Værsågod
+     * @since     1.0.0
+     */
+    public function getConfigFingerprint(): string
+    {
+        if ($this->_configFingerprint !== null) {
+            return $this->_configFingerprint;
+        }
+
+        $generalConfig = Craft::$app->getConfig()->getGeneral();
+
+        // cspNonce can be a closure, and is per request anyway
+        $settings = array_diff_key($this->_settings()->toArray(), ['cspNonce' => true]);
+
+        return $this->_configFingerprint = md5(Json::encode([
+            $settings,
+            $generalConfig->phpSessionName,
+            $generalConfig->csrfTokenName,
+            $generalConfig->userSessionDuration,
+            $generalConfig->rememberedUserSessionDuration,
+            Craft::$app->getEnvId(),
+        ]));
     }
 
     // Private Methods
@@ -384,32 +415,6 @@ class Frontend extends Component
         return [$handle, null];
     }
 
-    /**
-     * Returns a hash of the config the cached site data is built from: the
-     * plugin settings, and the Craft settings that name the built-in cookies.
-     *
-     * @return string
-     */
-    private function _configFingerprint(): string
-    {
-        if ($this->_configFingerprint !== null) {
-            return $this->_configFingerprint;
-        }
-
-        $generalConfig = Craft::$app->getConfig()->getGeneral();
-
-        // cspNonce can be a closure, and is per request anyway
-        $settings = array_diff_key($this->_settings()->toArray(), ['cspNonce' => true]);
-
-        return $this->_configFingerprint = md5(Json::encode([
-            $settings,
-            $generalConfig->phpSessionName,
-            $generalConfig->csrfTokenName,
-            $generalConfig->userSessionDuration,
-            $generalConfig->rememberedUserSessionDuration,
-            Craft::$app->getEnvId(),
-        ]));
-    }
 
     /**
      * @return Settings

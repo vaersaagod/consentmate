@@ -46,7 +46,9 @@ class ServiceElements extends Component
     public function getLiveServices(int $siteId): array
     {
         $plugin = ConsentMate::getInstance();
-        $cacheKey = "consentmate:services:{$plugin->getVersion()}:$siteId";
+        // The config is part of the key, since presets (and their code) can
+        // be changed there
+        $cacheKey = "consentmate:services:{$plugin->getVersion()}:{$plugin->getFrontend()->getConfigFingerprint()}:$siteId";
 
         return Craft::$app->getCache()->getOrSet($cacheKey, static function() use ($siteId, $plugin): array {
             $categoryOrder = array_flip(array_keys($plugin->getSettings()->getCategories()));
