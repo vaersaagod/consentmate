@@ -44,6 +44,15 @@
         <p class="warning with-icon">{{ 'The cookie report is turned off in the config.'|t('consentmate') }}</p>
     {% endif %}
 
+    {% if sitesAtLimit|length %}
+        <p class="warning with-icon">
+            {{ 'The report is full on {sites}: it keeps {limit} cookies of each kind per site, so new ones aren\'t reported there. Clear the ones you\'ve handled.'|t('consentmate', {
+                sites: sitesAtLimit|join(', '),
+                limit: limit,
+            }) }}
+        </p>
+    {% endif %}
+
     <div class="readable">
         <p>
             {{ 'When visitors save their consent, their browser sends the cookies this website has set. They\'re compared with the cookies your services declare. Cookies set by other websites (like YouTube) are never sent here, so they can\'t be checked.'|t('consentmate') }}

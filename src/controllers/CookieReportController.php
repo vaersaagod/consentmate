@@ -6,6 +6,7 @@ use Craft;
 use craft\web\Controller;
 use vaersaagod\consentmate\ConsentMate;
 use vaersaagod\consentmate\elements\Service;
+use vaersaagod\consentmate\services\CookieReports;
 use yii\base\InvalidArgumentException;
 use yii\web\BadRequestHttpException;
 use yii\web\Response;
@@ -84,6 +85,11 @@ class CookieReportController extends Controller
             'showIgnored' => $showIgnored,
             'services' => $services,
             'enabled' => $plugin->getSettings()->getCookieReport()['enabled'],
+            'sitesAtLimit' => array_values(array_filter(array_map(
+                static fn(int $siteId) => Craft::$app->getSites()->getSiteById($siteId, true)?->getName(),
+                $plugin->getCookieReports()->getSiteIdsAtLimit()
+            ))),
+            'limit' => CookieReports::MAX_REPORTS_PER_SITE,
         ]);
     }
 

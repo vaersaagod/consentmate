@@ -141,6 +141,7 @@ return [
     'Button' => 'Knapp',
     'Description' => 'Beskrivelse',
     'Texts saved.' => 'Tekstene er lagret.',
+    'The report is full on {sites}: it keeps {limit} cookies of each kind per site, so new ones aren\'t reported there. Clear the ones you\'ve handled.' => 'Rapporten er full for {sites}: den tar vare på {limit} informasjonskapsler av hver type per nettsted, så nye blir ikke rapportert der. Fjern dem du har tatt hånd om.',
     'Couldn\'t save the texts.' => 'Kunne ikke lagre tekstene.',
     'Enter a URL starting with https://, or a path on this website starting with /.' => 'Skriv inn en URL som starter med https://, eller en sti på dette nettstedet som starter med /.',
     'The copy visitors see in the consent banner and settings on {site}. Empty fields fall back to the default text.' => 'Teksten de besøkende ser i samtykkebanneret og innstillingene på {site}. Tomme felt bruker standardteksten.',

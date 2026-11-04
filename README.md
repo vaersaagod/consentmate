@@ -179,7 +179,7 @@ ConsentMate keeps an eye on the declaration for you. When visitors save their co
 - **Set without consent**: declared cookies that were present while their category wasn't granted. Something sets them before consent, usually a script added straight to a template instead of to a service or inside `{% consent %}`. This is the kind of problem regulators fine for, so fix it, then clear the report.
 - **Not declared**: cookies no service declares. Add each one to the service that sets it (straight from the report), or ignore it. When a cookie belongs to a preset, the report suggests it: "Create service" makes a service from the preset, or the existing one is preselected.
 
-The nav item shows a badge with the number of open issues. Reports not seen for 90 days are deleted by `php craft consentmate/purge` (or when Craft collects garbage), and ignored ones are kept so they stay ignored. A site keeps at most 200 reports, so new cookie names aren't added once it has that many; clear the ones you've handled.
+The nav item shows a badge with the number of open issues. Reports not seen for 90 days are deleted by `php craft consentmate/purge` (or when Craft collects garbage), and ignored ones are kept so they stay ignored. A site keeps at most 200 reports of each kind, so made-up cookie names sent to the public save endpoint can't fill the table or crowd out cookies set without consent. The report says when a site is full; clear the ones you've handled.
 
 A visitor whose consent has expired can still have cookies from it, and they're reported as set without consent when that visitor makes a new choice. A report with only a few hits can be that. A script that runs before consent shows up on most visits.
 

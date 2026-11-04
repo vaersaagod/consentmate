@@ -56,10 +56,12 @@ class CookieReports extends Component
     private const MAX_COOKIES = 100;
 
     /**
-     * The most reports kept per site. The save endpoint is public, so this
-     * keeps made-up cookie names from filling the table.
+     * The most reports of each status kept per site. The save endpoint is
+     * public, so this keeps made-up cookie names from filling the table. Each
+     * status has its own allowance, so made-up undeclared names can't crowd
+     * out cookies set without consent.
      */
-    private const MAX_REPORTS_PER_SITE = 200;
+    public const MAX_REPORTS_PER_SITE = 200;
 
     // Public Methods
     // =========================================================================
@@ -102,7 +104,11 @@ class CookieReports extends Component
                 ->where(['siteId' => $site->id])
                 ->all()
         ));
-        $room = self::MAX_REPORTS_PER_SITE - \count($existing);
+        $room = [self::STATUS_UNDECLARED => self::MAX_REPORTS_PER_SITE, self::STATUS_LEAK => self::MAX_REPORTS_PER_SITE];
+
+        foreach (array_keys($existing) as $key) {
+            $room[strstr($key, ':', true)]--;
+        }
 
         foreach (\array_slice($cookieNames, 0, self::MAX_COOKIES) as $name) {
             $name = (string)$name;
@@ -131,12 +137,12 @@ class CookieReports extends Component
             }
 
             if (!isset($existing["$status:$name"])) {
-                if ($room <= 0) {
+                if ($room[$status] <= 0) {
                     continue;
                 }
 
                 $existing["$status:$name"] = true;
-                $room--;
+                $room[$status]--;
             }
 
             $this->_upsert($site->id, $name, $status, $match['category'] ?? null, $match['serviceId'] ?? null, $path, $now);
@@ -194,6 +200,25 @@ class CookieReports extends Component
             ->from(Table::COOKIE_REPORTS)
             ->where(['ignored' => false])
             ->count();
+    }
+
+    /**
+     * Returns the IDs of the sites that have as many reports of a status as
+     * they can keep, so new cookies of that status aren't reported there.
+     *
+     * @return int[]
+     *
+     * @author    Værsågod
+     * @since     1.0.0
+     */
+    public function getSiteIdsAtLimit(): array
+    {
+        return array_values(array_unique(array_map('intval', (new Query())
+            ->select(['siteId'])
+            ->from(Table::COOKIE_REPORTS)
+            ->groupBy(['siteId', 'status'])
+            ->having(['>=', 'COUNT(*)', self::MAX_REPORTS_PER_SITE])
+            ->column())));
     }
 
     /**
