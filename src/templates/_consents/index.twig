@@ -44,13 +44,14 @@
 
     <hr>
 
-    <form method="get" class="flex" role="search">
+    <form method="get" class="flex consentmate-search" role="search">
         <div class="flex-grow texticon has-filter-btn">
             <span class="texticon-icon search icon" aria-hidden="true"></span>
             <input type="search" class="text fullwidth" name="q" value="{{ search }}" placeholder="{{ 'Search by consent ID'|t('consentmate') }}" aria-label="{{ 'Search by consent ID'|t('consentmate') }}">
         </div>
         <div class="select">
-            <select name="action" aria-label="{{ 'Action'|t('consentmate') }}">
+            {# Not "action": Craft routes any request with an action param to a controller #}
+            <select name="type" aria-label="{{ 'Action'|t('consentmate') }}">
                 <option value="">{{ 'All actions'|t('consentmate') }}</option>
                 {% for action in actions %}
                     <option value="{{ action }}" {{ action == selectedAction ? 'selected' }}>{{ actionLabels[action] ?? action }}</option>
@@ -92,7 +93,7 @@
         </div>
 
         {% if totalPages > 1 %}
-            {% set baseParams = { q: search ?: null, action: selectedAction ?: null }|filter(v => v is not null) %}
+            {% set baseParams = { q: search ?: null, type: selectedAction ?: null }|filter(v => v is not null) %}
             <nav class="flex" aria-label="{{ 'Pagination'|t('app') }}" style="margin-top: 1rem;">
                 {% if page > 1 %}
                     <a class="btn" href="{{ cpUrl('consentmate/consents', baseParams|merge({ page: page - 1 })) }}">{{ 'Previous'|t('consentmate') }}</a>
@@ -112,7 +113,7 @@
     <section aria-labelledby="consentmate-revisions-heading">
         <h2 id="consentmate-revisions-heading">{{ 'Revisions'|t('consentmate') }}</h2>
         <p class="light">{{ 'Consent is given for a revision. Visitors are asked again when the revision changes.'|t('consentmate') }}</p>
-        <table class="data">
+        <table class="data fullwidth">
             <thead>
                 <tr>
                     <th scope="col">{{ 'Revision'|t('consentmate') }}</th>
@@ -136,6 +137,7 @@
 {% endblock %}
 
 {% css %}
+.consentmate-search { margin-bottom: var(--l, 1.125rem); }
 .consentmate-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--m, 1rem); margin: 0; }
 .consentmate-summary div { padding: var(--s, .5rem) var(--m, 1rem); border-radius: var(--large-border-radius, 5px); background: var(--gray-050); }
 .consentmate-summary dt { color: var(--light-text-color); font-size: .9em; }

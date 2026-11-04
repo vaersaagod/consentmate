@@ -60,7 +60,8 @@ class ConsentsController extends Controller
     {
         $plugin = ConsentMate::getInstance();
         $search = trim((string)$this->request->getQueryParam('q', ''));
-        $action = (string)$this->request->getQueryParam('action', '');
+        // Not `action`, which Craft treats as a controller route
+        $action = (string)$this->request->getQueryParam('type', '');
         $page = max(1, (int)$this->request->getQueryParam('page', 1));
 
         $log = $plugin->getConsents()->getLogPage([
