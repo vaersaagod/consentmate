@@ -18,10 +18,10 @@
             {{ 'Given'|t('consentmate') }}: <span data-consentmate-status-date></span><br>
             {{ 'Your consent ID'|t('consentmate') }}: <code data-consentmate-status-id></code>
         </p>
-        <p class="consentmate-buttons">
+        <div class="consentmate-buttons">
             <button type="button" class="consentmate-button" data-consentmate-open>{{ 'Change your choices'|t('consentmate') }}</button>
             <button type="button" class="consentmate-button" data-consentmate-action="reject-all">{{ 'Withdraw consent'|t('consentmate') }}</button>
-        </p>
+        </div>
     </div>
 
     {% for category in categories %}

@@ -3,8 +3,13 @@
  *
  * Theme with the custom properties below, e.g.
  *   :root { --consentmate-accent: #0b5; --consentmate-radius: 0; }
+ * override single rules with class selectors in your own CSS, e.g.
+ *   .consentmate-button { border-width: 1px; }
  * or turn the stylesheet off with `includeCss => false` and style the
  * markup yourself.
+ *
+ * Global element styles on the site (p, h2, li, label, button) are reset
+ * inside ConsentMate's markup, so they don't change its sizes and spacing.
  */
 :root {
     --consentmate-font: inherit;
@@ -26,6 +31,58 @@ html[data-consentmate="pending"] {
     scroll-padding-bottom: var(--consentmate-banner-height, 0);
 }
 
+/*
+ * What the runtime shows and hides. A site rule like p { display: block }
+ * beats the browser's own [hidden] style, so it's repeated here.
+ */
+[data-consentmate-banner][hidden],
+[data-consentmate-floating][hidden],
+[data-consentmate-gpc][hidden],
+[data-consentmate-status-given][hidden],
+[data-consentmate-status-none][hidden] {
+    display: none !important;
+}
+
+/*
+ * Reset of the elements in ConsentMate's markup, so the site's global
+ * element styles (p { font-size: 24px }, h2 { text-transform: uppercase },
+ * ul li::before bullets) don't reach them. Each selector has the specificity
+ * of one class: it beats element selectors like `p` or `ul li`, and any class
+ * selector, like the rules further down or your own overrides, beats it.
+ *
+ * The cookie declaration's own headings and paragraphs are left alone, so
+ * they look like the rest of the page. Only its service boxes are reset.
+ */
+.consentmate :where(section, form, h2, h3, h4, h5, h6, p, ul, li, dl, dt, dd, label, strong, code, details, summary, table, tr, th, td, button),
+.consentmate-placeholder :where(p, button),
+.consentmate-service :where(h2, h3, h4, h5, h6, p, dl, dt, dd, strong, code, table, tr, th, td) {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: none;
+}
+
+.consentmate :where(strong, th),
+.consentmate-service :where(strong, th) {
+    font-weight: 700;
+}
+
+.consentmate :where(code),
+.consentmate-service :where(code) {
+    font-family: monospace;
+}
+
+.consentmate :where(li)::before,
+.consentmate :where(li)::after {
+    content: none;
+}
+
 .consentmate-banner,
 .consentmate-dialog,
 .consentmate-floating,
@@ -42,12 +99,6 @@ html[data-consentmate="pending"] {
     box-sizing: border-box;
 }
 
-.consentmate-banner[hidden],
-.consentmate-floating[hidden],
-[data-consentmate-gpc][hidden] {
-    display: none !important;
-}
-
 /* First layer */
 .consentmate-banner {
     position: fixed;
@@ -56,6 +107,7 @@ html[data-consentmate="pending"] {
     max-width: 38rem;
     max-height: calc(100vh - 2rem);
     overflow: auto;
+    margin: 0;
     padding: 1.25rem 1.5rem;
     background: var(--consentmate-bg);
     border: 1px solid var(--consentmate-border);
@@ -97,13 +149,18 @@ html[data-consentmate="pending"] {
 .consentmate-button {
     flex: 1 1 auto;
     min-height: 2.75rem;
+    margin: 0;
     padding: 0.5rem 1rem;
     border: 2px solid var(--consentmate-accent);
     border-radius: var(--consentmate-radius);
     background: var(--consentmate-accent);
+    box-shadow: none;
     color: var(--consentmate-accent-fg);
     font: inherit;
     font-weight: 600;
+    letter-spacing: inherit;
+    text-align: center;
+    text-transform: none;
     cursor: pointer;
 }
 
@@ -223,21 +280,29 @@ html[data-consentmate="pending"] {
     white-space: nowrap;
 }
 
-/* Toggle switch: a checkbox with role="switch" */
-.consentmate-switch {
+/*
+ * Toggle switch: a checkbox with role="switch". The [type] in the selectors
+ * keeps global checkbox styles like input[type="checkbox"] off it. Restyle
+ * it with the same selectors.
+ */
+.consentmate-switch[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
     position: relative;
     flex: none;
     width: 3rem;
     height: 1.75rem;
     margin: 0;
-    appearance: none;
+    padding: 0;
     border: 2px solid var(--consentmate-accent);
     border-radius: 1rem;
     background: var(--consentmate-bg);
+    box-shadow: none;
+    opacity: 1;
     cursor: pointer;
 }
 
-.consentmate-switch::after {
+.consentmate-switch[type="checkbox"]::after {
     content: "";
     position: absolute;
     top: 0.1875rem;
@@ -249,16 +314,16 @@ html[data-consentmate="pending"] {
     transition: transform 0.15s ease;
 }
 
-.consentmate-switch:checked {
+.consentmate-switch[type="checkbox"]:checked {
     background: var(--consentmate-accent);
 }
 
-.consentmate-switch:checked::after {
+.consentmate-switch[type="checkbox"]:checked::after {
     background: var(--consentmate-accent-fg);
     transform: translateX(1.25rem);
 }
 
-.consentmate-switch:disabled {
+.consentmate-switch[type="checkbox"]:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
@@ -285,6 +350,7 @@ html[data-consentmate="pending"] {
     margin: 0 0 0.25rem;
     font-size: 0.9375rem;
     font-weight: 700;
+    line-height: 1.3;
 }
 
 .consentmate-service p,
@@ -384,6 +450,7 @@ html[data-consentmate="pending"] {
 }
 
 /* Cookie declaration */
+.consentmate-declaration-status,
 .consentmate-declaration-category {
     margin-bottom: 2rem;
 }
@@ -405,13 +472,13 @@ html[data-consentmate="pending"] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .consentmate-switch::after {
+    .consentmate-switch[type="checkbox"]::after {
         transition: none;
     }
 }
 
 @media (forced-colors: active) {
-    .consentmate-switch:checked::after {
+    .consentmate-switch[type="checkbox"]:checked::after {
         background: CanvasText;
     }
 }
