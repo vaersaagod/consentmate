@@ -55,7 +55,7 @@ class ConsentMate extends Plugin
     /**
      * @inheritdoc
      */
-    public string $schemaVersion = '1.0.2';
+    public string $schemaVersion = '1.0.3';
 
     /**
      * @inheritdoc

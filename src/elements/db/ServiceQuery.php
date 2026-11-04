@@ -113,6 +113,8 @@ class ServiceQuery extends ElementQuery
             'consentmate_services.provider',
             'consentmate_services.preset',
             'consentmate_services.presetValues',
+            'consentmate_services.presetCookies',
+            'consentmate_services.presetUpdate',
             'consentmate_services.cookies',
             'consentmate_services.headCode',
             'consentmate_services.bodyCode',

@@ -17,6 +17,10 @@ use vaersaagod\consentmate\models\Preset;
  * their own, change built-in ones or remove them (`false`) with the `presets`
  * config setting, and plugins with `EVENT_REGISTER_PRESETS`.
  *
+ * Services keep the cookies their preset gave them, so they're updated with
+ * `syncServices()` when a preset's cookies change. A release that changes the
+ * cookies of a built-in preset needs a migration that calls it.
+ *
  * @author    Værsågod
  * @package   ConsentMate
  * @since     1.0.0
@@ -251,6 +255,154 @@ class Presets extends Component
         }
 
         return null;
+    }
+
+    /**
+     * Brings a service's cookies in step with its preset, without touching
+     * the client's own changes. Compares the service's cookies with the
+     * preset's cookies as last applied (`$applied`) and as they are now
+     * (`$preset`):
+     *
+     * - A row the client hasn't changed since it was applied follows the
+     *   preset: it's replaced with the new version, or removed if the preset
+     *   dropped the cookie.
+     * - A row the client changed or deleted is left as it is.
+     * - A cookie new to the preset is added, unless the service already has
+     *   one by that name and type.
+     * - Cookies the client added are never touched.
+     *
+     * @param array $current The service's cookies, normalized
+     * @param array $applied The preset's cookies as last applied, normalized
+     * @param array $preset The preset's cookies now, normalized
+     * @return array{cookies: array, added: string[], changed: string[], removed: string[]}
+     *
+     * @author    Værsågod
+     * @since     1.0.4
+     */
+    public function mergeCookies(array $current, array $applied, array $preset): array
+    {
+        // A row's full value, and the cookie it describes
+        $key = static fn(array $row): string => implode("\0", [$row['name'], $row['type'], $row['party'], (string)$row['duration'], $row['unit']]);
+        $id = static fn(array $row): string => $row['name'] . "\0" . $row['type'];
+
+        $appliedKeys = array_map($key, $applied);
+        $appliedIds = array_map($id, $applied);
+        $presetKeys = array_map($key, $preset);
+        $presetById = [];
+
+        foreach ($preset as $row) {
+            $presetById[$id($row)] ??= $row;
+        }
+
+        $cookies = [];
+        $added = [];
+        $changed = [];
+        $removed = [];
+
+        foreach ($current as $row) {
+            $rowKey = $key($row);
+
+            // Untouched since it was applied, and the preset has changed or dropped it
+            if (\in_array($rowKey, $appliedKeys, true) && !\in_array($rowKey, $presetKeys, true)) {
+                $replacement = $presetById[$id($row)] ?? null;
+
+                if ($replacement === null) {
+                    $removed[] = $row['name'];
+                    continue;
+                }
+
+                $cookies[] = $replacement;
+                $changed[] = $row['name'];
+                continue;
+            }
+
+            $cookies[] = $row;
+        }
+
+        $currentIds = array_map($id, $cookies);
+
+        foreach ($preset as $row) {
+            $rowId = $id($row);
+
+            // Already applied, a change to a cookie the preset already had (only
+            // untouched rows follow those, above), or one the service has
+            if (\in_array($key($row), $appliedKeys, true) || \in_array($rowId, $appliedIds, true) || \in_array($rowId, $currentIds, true)) {
+                continue;
+            }
+
+            $cookies[] = $row;
+            $currentIds[] = $rowId;
+            $added[] = $row['name'];
+        }
+
+        // A replacement can match a row the client already added
+        $unique = [];
+
+        foreach ($cookies as $row) {
+            $unique[$key($row)] ??= $row;
+        }
+
+        return [
+            'cookies' => array_values($unique),
+            'added' => $added,
+            'changed' => $changed,
+            'removed' => $removed,
+        ];
+    }
+
+    /**
+     * Brings the cookies of every service made from a preset in step with
+     * it. Services without the preset's cookies as last applied (made before
+     * they were stored) only get them stored, so the next change applies.
+     *
+     * @param bool $dryRun Report what would change without saving
+     * @return array<int, array{service: Service, added: string[], changed: string[], removed: string[], saved: bool}> The services whose cookies changed
+     * @throws \Throwable
+     *
+     * @author    Værsågod
+     * @since     1.0.4
+     */
+    public function syncServices(bool $dryRun = false): array
+    {
+        $handles = array_keys($this->getAllPresets());
+
+        if (empty($handles)) {
+            return [];
+        }
+
+        $primarySiteId = Craft::$app->getSites()->getPrimarySite()->id;
+
+        /** @var Service[] $services */
+        $services = Service::find()
+            ->preset($handles)
+            ->siteId($primarySiteId)
+            ->status(null)
+            ->all();
+
+        $results = [];
+
+        foreach ($services as $service) {
+            $changes = $service->syncPresetCookies();
+
+            if ($changes === null) {
+                continue;
+            }
+
+            $hasChanges = !empty($changes['added']) || !empty($changes['changed']) || !empty($changes['removed']);
+            $saved = false;
+
+            if (!$dryRun) {
+                // Only the cookies change, so other fields that no longer
+                // validate (an old ID, say) mustn't block it
+                $saved = Craft::$app->getElements()->saveElement($service, false);
+            }
+
+            if ($hasChanges) {
+                $results[] = ['service' => $service] + $changes + ['saved' => $saved];
+            }
+        }
+
+        return $results;
     }
 
     /**

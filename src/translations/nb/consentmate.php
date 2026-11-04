@@ -209,6 +209,11 @@ return [
     'The cookie report is turned off in the config.' => 'Rapporten om informasjonskapsler er slått av i konfigurasjonen.',
 
     // CP: presets
+    'Updated from the {preset} preset on {date}.' => 'Oppdatert fra malen {preset} {date}.',
+    'Added: {cookies}.' => 'Lagt til: {cookies}.',
+    'Changed: {cookies}.' => 'Endret: {cookies}.',
+    'Removed: {cookies}.' => 'Fjernet: {cookies}.',
+    'Visitors aren\'t asked again. If the change matters to them, use "Ask everyone again" on the services page.' => 'De besøkende blir ikke spurt på nytt. Hvis endringen betyr noe for dem, bruk «Spør alle på nytt» på siden med tjenester.',
     'Preset' => 'Mal',
     'Blank service' => 'Tom tjeneste',
     'Custom' => 'Egen',

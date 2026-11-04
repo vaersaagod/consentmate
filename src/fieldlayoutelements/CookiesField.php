@@ -5,6 +5,8 @@ namespace vaersaagod\consentmate\fieldlayoutelements;
 use Craft;
 use craft\base\ElementInterface;
 use craft\fieldlayoutelements\BaseNativeField;
+use craft\helpers\DateTimeHelper;
+use craft\i18n\Locale;
 use vaersaagod\consentmate\elements\Service;
 use vaersaagod\consentmate\helpers\DurationHelper;
 
@@ -70,6 +72,47 @@ class CookiesField extends BaseNativeField
     protected function defaultInstructions(?ElementInterface $element = null, bool $static = false): ?string
     {
         return Craft::t('consentmate', 'The cookies and other browser storage the service sets. Use * as a wildcard, like `_ga_*`. First-party cookies are deleted when a visitor withdraws consent.');
+    }
+
+    /**
+     * Says what the last update from the service's preset changed.
+     *
+     * @inheritdoc
+     */
+    protected function tip(?ElementInterface $element = null, bool $static = false): ?string
+    {
+        $preset = $element instanceof Service ? $element->getPreset() : null;
+        $update = $element instanceof Service ? $element->getPresetUpdate() : null;
+
+        if ($preset === null || $update === null) {
+            return parent::tip($element, $static);
+        }
+
+        $date = DateTimeHelper::toDateTime($update['date']);
+        $parts = [
+            Craft::t('consentmate', 'Updated from the {preset} preset on {date}.', [
+                'preset' => Craft::t('consentmate', $preset->name),
+                'date' => $date ? Craft::$app->getFormatter()->asDate($date, Locale::LENGTH_SHORT) : $update['date'],
+            ]),
+        ];
+
+        $messages = [
+            'added' => Craft::t('consentmate', 'Added: {cookies}.'),
+            'changed' => Craft::t('consentmate', 'Changed: {cookies}.'),
+            'removed' => Craft::t('consentmate', 'Removed: {cookies}.'),
+        ];
+
+        foreach ($messages as $key => $message) {
+            if (!empty($update[$key])) {
+                // Tips are Markdown, so the names go in code spans
+                $names = array_map(static fn(string $name) => '`' . str_replace('`', '', $name) . '`', $update[$key]);
+                $parts[] = str_replace('{cookies}', implode(', ', $names), $message);
+            }
+        }
+
+        $parts[] = Craft::t('consentmate', 'Visitors aren\'t asked again. If the change matters to them, use "Ask everyone again" on the services page.');
+
+        return implode(' ', $parts);
     }
 
     /**

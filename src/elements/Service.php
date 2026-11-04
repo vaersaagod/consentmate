@@ -8,6 +8,7 @@ use craft\elements\User;
 use craft\fieldlayoutelements\TextareaField;
 use craft\fieldlayoutelements\TextField;
 use craft\fieldlayoutelements\TitleField;
+use craft\helpers\DateTimeHelper;
 use craft\helpers\Db;
 use craft\helpers\Html;
 use craft\helpers\Json;
@@ -96,6 +97,19 @@ class Service extends Element
      * before validation.
      */
     public array|string|null $cookies = [];
+
+    /**
+     * @var array|string|null The preset's cookies as they were last applied
+     * to the service, which tells the client's changes from the preset's.
+     * `null` if they aren't known (a service made before they were stored).
+     */
+    public array|string|null $presetCookies = null;
+
+    /**
+     * @var array|string|null What the last update from the preset changed:
+     * date (ISO 8601), added, changed and removed (cookie names).
+     */
+    public array|string|null $presetUpdate = null;
 
     /**
      * @var string|null Code output in `<head>` after consent
@@ -373,6 +387,8 @@ class Service extends Element
         parent::init();
         $this->cookies = self::normalizeCookies($this->cookies);
         $this->presetValues = $this->getPresetValues();
+        $this->presetCookies = $this->getPresetCookies();
+        $this->presetUpdate = $this->getPresetUpdate();
     }
 
     /**
@@ -438,6 +454,96 @@ class Service extends Element
     public function getPresetValues(): array
     {
         return ConsentMate::getInstance()->getPresets()->normalizeValues($this->getPreset(), $this->presetValues);
+    }
+
+    /**
+     * Returns the preset's cookies as they were last applied to the service,
+     * or `null` if they aren't known.
+     *
+     * @return array<int, array{name: string, type: string, party: string, duration: ?int, unit: string}>|null
+     *
+     * @author    Værsågod
+     * @since     1.0.4
+     */
+    public function getPresetCookies(): ?array
+    {
+        $value = \is_string($this->presetCookies) ? Json::decodeIfJson($this->presetCookies) : $this->presetCookies;
+
+        return \is_array($value) ? self::normalizeCookies($value) : null;
+    }
+
+    /**
+     * Returns what the last update from the preset changed, if there was one.
+     *
+     * @return array{date: string, added: string[], changed: string[], removed: string[]}|null
+     *
+     * @author    Værsågod
+     * @since     1.0.4
+     */
+    public function getPresetUpdate(): ?array
+    {
+        $value = \is_string($this->presetUpdate) ? Json::decodeIfJson($this->presetUpdate) : $this->presetUpdate;
+
+        if (!\is_array($value) || !\is_string($value['date'] ?? null)) {
+            return null;
+        }
+
+        $names = static fn(mixed $list): array => \is_array($list) ? array_values(array_map('strval', array_filter($list, 'is_scalar'))) : [];
+
+        return [
+            'date' => $value['date'],
+            'added' => $names($value['added'] ?? null),
+            'changed' => $names($value['changed'] ?? null),
+            'removed' => $names($value['removed'] ?? null),
+        ];
+    }
+
+    /**
+     * Brings the cookies in step with the preset, keeping the client's own
+     * changes (see `Presets::mergeCookies()`). Changes the service in memory
+     * only; save it to keep them.
+     *
+     * Returns `null` if there's nothing to do. Otherwise it returns what
+     * changed, which can be nothing when only the preset's cookies as last
+     * applied need storing.
+     *
+     * @return array{added: string[], changed: string[], removed: string[]}|null
+     *
+     * @author    Værsågod
+     * @since     1.0.4
+     */
+    public function syncPresetCookies(): ?array
+    {
+        $preset = $this->getPreset();
+
+        if ($preset === null) {
+            return null;
+        }
+
+        $applied = $this->getPresetCookies();
+
+        // Not known, so start from the preset as it is now
+        if ($applied === null) {
+            $this->presetCookies = $preset->cookies;
+
+            return ['added' => [], 'changed' => [], 'removed' => []];
+        }
+
+        if ($applied === $preset->cookies) {
+            return null;
+        }
+
+        $merged = ConsentMate::getInstance()->getPresets()->mergeCookies($this->getCookies(), $applied, $preset->cookies);
+        $changes = array_intersect_key($merged, array_flip(['added', 'changed', 'removed']));
+
+        $this->cookies = $merged['cookies'];
+        $this->presetCookies = $preset->cookies;
+
+        if (!empty($changes['added']) || !empty($changes['changed']) || !empty($changes['removed'])) {
+            $this->presetUpdate = ['date' => DateTimeHelper::currentUTCDateTime()->format(\DateTimeInterface::ATOM)] + $changes;
+        }
+
+        return $changes;
     }
 
     /**
@@ -615,6 +721,8 @@ class Service extends Element
             'preset' => $this->getPreset() !== null ? $this->preset : null,
             // JSON columns are encoded by the query builder, so pass arrays
             'presetValues' => $this->getPresetValues() ?: null,
+            'presetCookies' => $this->getPresetCookies(),
+            'presetUpdate' => $this->getPresetUpdate(),
             'cookies' => self::normalizeCookies($this->cookies),
             'headCode' => $this->headCode,
             'bodyCode' => $this->bodyCode,
@@ -816,6 +924,10 @@ class Service extends Element
         if (empty($this->getCookies())) {
             $this->cookies = $preset->cookies;
         }
+
+        // What later updates from the preset compare against
+        $this->presetCookies = $preset->cookies;
+        $this->presetUpdate = null;
     }
 
     /**

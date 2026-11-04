@@ -130,6 +130,7 @@ class Install extends Migration
 
         self::createCookieReportsTable($this);
         self::addServicePresetColumns($this);
+        self::addPresetCookieColumns($this);
 
         // Start at revision 1
         if (!(new Query())->from(Table::REVISIONS)->exists()) {
@@ -160,6 +161,28 @@ class Install extends Migration
 
         if (!$migration->db->columnExists(Table::SERVICES, 'presetValues')) {
             $migration->addColumn(Table::SERVICES, 'presetValues', $migration->json()->after('preset'));
+        }
+    }
+
+    /**
+     * Adds the columns that keep a service's cookies in step with its preset:
+     * the preset's cookies as last applied, and what the last update changed.
+     * Shared with the migration that added them to existing installs.
+     *
+     * @param Migration $migration
+     * @return void
+     *
+     * @author    Værsågod
+     * @since     1.0.4
+     */
+    public static function addPresetCookieColumns(Migration $migration): void
+    {
+        if (!$migration->db->columnExists(Table::SERVICES, 'presetCookies')) {
+            $migration->addColumn(Table::SERVICES, 'presetCookies', $migration->json()->after('presetValues'));
+        }
+
+        if (!$migration->db->columnExists(Table::SERVICES, 'presetUpdate')) {
+            $migration->addColumn(Table::SERVICES, 'presetUpdate', $migration->json()->after('presetCookies'));
         }
     }
 
