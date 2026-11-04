@@ -55,6 +55,12 @@ class CookieReports extends Component
      */
     private const MAX_COOKIES = 100;
 
+    /**
+     * The most reports kept per site. The save endpoint is public, so this
+     * keeps made-up cookie names from filling the table.
+     */
+    private const MAX_REPORTS_PER_SITE = 200;
+
     // Public Methods
     // =========================================================================
 
@@ -86,6 +92,18 @@ class CookieReports extends Component
         $ignore = $this->_ignorePatterns();
         $now = Carbon::now('UTC')->format('Y-m-d H:i:s');
 
+        // The reports the site already has, which are counted again even when
+        // the site is at the limit
+        $existing = array_flip(array_map(
+            static fn(array $row) => $row['status'] . ':' . $row['name'],
+            (new Query())
+                ->select(['name', 'status'])
+                ->from(Table::COOKIE_REPORTS)
+                ->where(['siteId' => $site->id])
+                ->all()
+        ));
+        $room = self::MAX_REPORTS_PER_SITE - \count($existing);
+
         foreach (\array_slice($cookieNames, 0, self::MAX_COOKIES) as $name) {
             $name = (string)$name;
 
@@ -102,16 +120,27 @@ class CookieReports extends Component
                 }
             }
 
-            if ($match === null) {
-                $this->_upsert($site->id, $name, self::STATUS_UNDECLARED, null, null, $path, $now);
-                $reported['undeclared'][] = $name;
+            $status = match (true) {
+                $match === null => self::STATUS_UNDECLARED,
+                !\in_array($match['category'], $granted, true) => self::STATUS_LEAK,
+                default => null,
+            };
+
+            if ($status === null) {
                 continue;
             }
 
-            if (!\in_array($match['category'], $granted, true)) {
-                $this->_upsert($site->id, $name, self::STATUS_LEAK, $match['category'], $match['serviceId'], $path, $now);
-                $reported['leaks'][] = $name;
+            if (!isset($existing["$status:$name"])) {
+                if ($room <= 0) {
+                    continue;
+                }
+
+                $existing["$status:$name"] = true;
+                $room--;
             }
+
+            $this->_upsert($site->id, $name, $status, $match['category'] ?? null, $match['serviceId'] ?? null, $path, $now);
+            $reported[$status === self::STATUS_LEAK ? 'leaks' : 'undeclared'][] = $name;
         }
 
         return $reported;
