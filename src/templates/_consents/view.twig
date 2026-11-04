@@ -36,7 +36,7 @@
                     <div class="readable">
                         <h3>{{ snapshot.texts.bannerHeading ?? '' }}</h3>
                         <p>{{ (snapshot.texts.bannerBody ?? '')|nl2br }}</p>
-                        {% if snapshot.texts.policyUrl ?? false %}
+                        {% if (snapshot.texts.policyUrl ?? '') matches '/^(https?:\\/\\/|\\/)[^\\s]*$/i' %}
                             <p><a href="{{ snapshot.texts.policyUrl }}" target="_blank" rel="noopener">{{ snapshot.texts.policyLinkLabel ?? snapshot.texts.policyUrl }}</a></p>
                         {% endif %}
                         {% for category in snapshot.categories ?? [] %}

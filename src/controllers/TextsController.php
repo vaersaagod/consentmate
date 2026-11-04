@@ -46,13 +46,15 @@ class TextsController extends Controller
     /**
      * Renders the texts form for the requested site.
      *
+     * @param array|null $texts Posted texts, when a save failed
+     * @param array $errors Validation errors, when a save failed
      * @return Response
      * @throws ForbiddenHttpException
      *
      * @author    Værsågod
      * @since     1.0.0
      */
-    public function actionIndex(): Response
+    public function actionIndex(?array $texts = null, array $errors = []): Response
     {
         $site = Cp::requestedSite();
 
@@ -60,14 +62,36 @@ class TextsController extends Controller
             throw new ForbiddenHttpException('User not authorized to edit content in any sites.');
         }
 
-        $texts = ConsentMate::getInstance()->getTexts();
+        $service = ConsentMate::getInstance()->getTexts();
+        $values = $service->getTexts($site->id);
+        $categories = $service->getCategories($site->id);
+
+        // Show what was posted when a save failed
+        if ($texts !== null) {
+            foreach ($values as $key => $value) {
+                if ($key !== 'categories' && isset($texts[$key]) && \is_string($texts[$key])) {
+                    $values[$key] = $texts[$key];
+                }
+            }
+
+            foreach ($categories as $handle => $category) {
+                foreach (['name', 'description'] as $key) {
+                    $posted = $texts['categories'][$handle][$key] ?? null;
+
+                    if (\is_string($posted)) {
+                        $categories[$handle][$key] = $posted;
+                    }
+                }
+            }
+        }
 
         return $this->renderTemplate('consentmate/_texts/index.twig', [
             'site' => $site,
-            'fieldDefinitions' => $texts->getFieldDefinitions(),
-            'texts' => $texts->getTexts($site->id),
-            'defaults' => $texts->getDefaults($site->language),
-            'categories' => $texts->getCategories($site->id),
+            'fieldDefinitions' => $service->getFieldDefinitions(),
+            'texts' => $values,
+            'errors' => $errors,
+            'defaults' => $service->getDefaults($site->language),
+            'categories' => $categories,
         ]);
     }
 
@@ -94,8 +118,18 @@ class TextsController extends Controller
         }
 
         $texts = $this->request->getBodyParam('texts');
+        $texts = \is_array($texts) ? $texts : [];
+        $service = ConsentMate::getInstance()->getTexts();
+        $errors = $service->validateTexts($texts);
 
-        ConsentMate::getInstance()->getTexts()->saveTexts($siteId, \is_array($texts) ? $texts : []);
+        if (!empty($errors)) {
+            return $this->asFailure(Craft::t('consentmate', 'Couldn\'t save the texts.'), routeParams: [
+                'texts' => $texts,
+                'errors' => $errors,
+            ]);
+        }
+
+        $service->saveTexts($siteId, $texts);
 
         return $this->asSuccess(Craft::t('consentmate', 'Texts saved.'));
     }

@@ -221,6 +221,10 @@ class Texts extends Component
             }
         }
 
+        if (!self::isSafeUrl($texts['policyUrl'])) {
+            $texts['policyUrl'] = '';
+        }
+
         foreach ($defaults['categories'] as $handle => $category) {
             foreach (['name', 'description'] as $key) {
                 $value = $saved['categories'][$handle][$key] ?? null;
@@ -232,6 +236,49 @@ class Texts extends Component
         }
 
         return $this->_texts[$siteId] = $texts;
+    }
+
+    /**
+     * Validates texts posted from the CP.
+     *
+     * @param array $texts
+     * @return array<string, string[]> Errors, keyed by text key
+     *
+     * @author    Værsågod
+     * @since     1.0.0
+     */
+    public function validateTexts(array $texts): array
+    {
+        $errors = [];
+        $policyUrl = trim((string)(\is_scalar($texts['policyUrl'] ?? null) ? $texts['policyUrl'] : ''));
+
+        if ($policyUrl !== '' && !self::isSafeUrl($policyUrl)) {
+            $errors['policyUrl'][] = Craft::t('consentmate', 'Enter a URL starting with https://, or a path on this website starting with /.');
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Returns whether a URL is safe to link to from the banner: an http(s)
+     * URL, or a path on the website. Anything else, like a `javascript:`
+     * URL, could run code when the link is clicked.
+     *
+     * @param string $url
+     * @return bool
+     *
+     * @author    Værsågod
+     * @since     1.0.0
+     */
+    public static function isSafeUrl(string $url): bool
+    {
+        if ($url === '') {
+            return true;
+        }
+
+        // Browsers ignore whitespace and control characters in a URL, so
+        // they're refused rather than let them hide a scheme
+        return (bool)preg_match('/^(https?:\/\/|\/)[^\x00-\x20\x7F]*$/i', $url);
     }
 
     /**
@@ -257,7 +304,11 @@ class Texts extends Component
                 continue;
             }
 
-            $value = trim((string)($texts[$key] ?? ''));
+            $value = trim(\is_scalar($texts[$key] ?? null) ? (string)$texts[$key] : '');
+
+            if ($key === 'policyUrl' && !self::isSafeUrl($value)) {
+                continue;
+            }
 
             if ($value !== '' && $value !== $default) {
                 $save[$key] = $value;
@@ -266,7 +317,8 @@ class Texts extends Component
 
         foreach ($defaults['categories'] as $handle => $category) {
             foreach (['name', 'description'] as $key) {
-                $value = trim((string)($texts['categories'][$handle][$key] ?? ''));
+                $value = $texts['categories'][$handle][$key] ?? null;
+                $value = trim(\is_scalar($value) ? (string)$value : '');
 
                 if ($value !== '' && $value !== $category[$key]) {
                     $save['categories'][$handle][$key] = $value;

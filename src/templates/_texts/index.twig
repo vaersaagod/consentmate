@@ -42,6 +42,7 @@
                 name: "texts[#{key}]",
                 value: texts[key] ?? '',
                 placeholder: defaults[key] ?? '',
+                errors: errors[key] ?? null,
             } %}
             {% if field.type == 'textarea' %}
                 {{ forms.textareaField(config|merge({ rows: 4 })) }}
