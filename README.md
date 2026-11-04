@@ -71,10 +71,11 @@ Use the `consent` tag around anything that sets cookies or contacts a third part
 {% endconsent %}
 ```
 
-Or the filter, for HTML you already have in a variable (like Toolmate's `getVideoEmbed()`):
+Or the filter, for HTML you already have in a variable (like the embed code from Toolmate's `getVideoEmbed()`):
 
 ```twig
-{{ embed.html|consent('marketing', { placeholder: true, provider: 'Vimeo' }) }}
+{% set video = getVideoEmbed(videoUrl) %}
+{{ video.embedCode|consent('marketing', { placeholder: true, provider: video.provider }) }}
 ```
 
 The placeholder is a box with the placeholder text from the CP, an "Allow and show" button that grants the category, and a link to the settings. Pass a template path as `placeholder` to use your own. The wrapper around gated markup uses `display: contents`, so CSS like `.video iframe` keeps working.
@@ -90,10 +91,17 @@ Instead of a category, you can name a preset. The markup then follows the catego
     <iframe src="https://www.youtube-nocookie.com/embed/{{ videoId }}" title="{{ title }}"></iframe>
 {% endconsent %}
 
-{{ embed.html|consent('vimeo', { placeholder: true }) }}
+{{ video.embedCode|consent('vimeo', { placeholder: true }) }}
 ```
 
 If the client moves YouTube to another category, the template doesn't need to change. When no service on the site is made from the preset, the preset's default category is used, and a warning is logged in dev mode.
+
+Toolmate's `getVideoEmbed()` returns the provider as "YouTube" or "Vimeo", so `video.provider|lower` is the preset handle. Map other providers to a category: a handle that's neither a category nor a preset is never shown.
+
+```twig
+{% set provider = video.provider|lower %}
+{{ video.embedCode|consent(provider in ['youtube', 'vimeo'] ? provider : 'marketing', { placeholder: true }) }}
+```
 
 ## Services (CP)
 
