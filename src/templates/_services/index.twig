@@ -1,0 +1,104 @@
+{#
+ # The services element index. New services are created as unpublished
+ # drafts through Craft's own elements/create action.
+ #}
+{% extends '_layouts/elementindex.twig' %}
+
+{% set title = 'Services'|t('consentmate') %}
+{% set elementType = 'vaersaagod\\consentmate\\elements\\Service' %}
+{% set selectedSubnavItem = 'services' %}
+
+{% block actionButton %}
+    <div class="flex">
+        <button type="button" id="consentmate-renew" class="btn" aria-describedby="consentmate-renew-info">
+            {{ 'Ask everyone again'|t('consentmate') }}
+        </button>
+        {# A blank service, or one made from a preset, grouped by default category #}
+        {% set menuItems = [{
+            label: 'Blank service'|t('consentmate'),
+            attributes: { data: { 'consentmate-create': true } },
+        }] %}
+        {% for group in presetGroups %}
+            {% set menuItems = menuItems|merge([{
+                heading: group.name,
+                items: group.presets|map(preset => {
+                    label: preset.name|t('consentmate'),
+                    description: preset.provider,
+                    attributes: { data: { 'consentmate-create': true, preset: preset.handle } },
+                }),
+            }]) %}
+        {% endfor %}
+        {{ disclosureMenu(menuItems, {
+            id: 'consentmate-new-service-menu',
+            buttonLabel: 'New service'|t('consentmate'),
+            buttonAttributes: { id: 'consentmate-new-service', class: ['submit', 'add', 'icon'] },
+            buttonSpinner: true,
+            withSearchInput: presetGroups|length > 0,
+        }) }}
+    </div>
+    <p id="consentmate-renew-info" class="visually-hidden">
+        {{ 'Shows the banner again to every visitor, including those who already made a choice. The current revision is {revision}.'|t('consentmate', { revision: currentRevision }) }}
+    </p>
+{% endblock %}
+
+{% js %}
+(() => {
+    const elementType = {{ elementType|json_encode|raw }};
+
+    let creating = false;
+
+    // Menu items are moved out of the toolbar, so listen on the document. The
+    // site is read on click, since the index can switch sites without a reload.
+    document.addEventListener('click', async (ev) => {
+        const item = ev.target.closest('[data-consentmate-create]');
+
+        if (!item || creating) {
+            return;
+        }
+
+        ev.preventDefault();
+        creating = true;
+
+        const button = document.getElementById('consentmate-new-service');
+        button?.classList.add('loading');
+
+        const preset = item.dataset.preset || null;
+
+        // A blank service defaults to the category of the selected source; a
+        // preset brings its own
+        const sourceKey = Craft.elementIndex?.sourceKey ?? '';
+        const category = !preset && sourceKey.startsWith('category:') ? sourceKey.slice(9) : null;
+
+        try {
+            const {data} = await Craft.sendActionRequest('POST', 'elements/create', {
+                data: {
+                    elementType,
+                    siteId: Craft.elementIndex?.siteId ?? null,
+                    ...(category ? {category} : {}),
+                    ...(preset ? {preset} : {}),
+                },
+            });
+            document.location.href = Craft.getUrl(data.cpEditUrl, {fresh: 1});
+        } catch (e) {
+            creating = false;
+            button?.classList.remove('loading');
+            Craft.cp.displayError(e?.response?.data?.message);
+        }
+    });
+
+    document.getElementById('consentmate-renew').addEventListener('click', async (ev) => {
+        const message = {{ 'Show the banner again to every visitor, including those who already made a choice?'|t('consentmate')|json_encode|raw }};
+
+        if (!window.confirm(message)) {
+            return;
+        }
+
+        try {
+            const {data} = await Craft.sendActionRequest('POST', 'consentmate/services/renew');
+            Craft.cp.displaySuccess(data.message);
+        } catch (e) {
+            Craft.cp.displayError(e?.response?.data?.message);
+        }
+    });
+})();
+{% endjs %}

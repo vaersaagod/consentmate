@@ -1,0 +1,73 @@
+{#
+ # Every logged consent for one consent ID, with a snapshot of the texts and
+ # services the visitor was shown. This is the proof of consent.
+ #}
+{% extends '_layouts/cp.twig' %}
+
+{% set title = 'Consent {id}'|t('consentmate', { id: consentId }) %}
+{% set selectedSubnavItem = 'consents' %}
+{% set crumbs = [{ label: 'Consent log'|t('consentmate'), url: cpUrl('consentmate/consents') }] %}
+
+{% block content %}
+    {% for row in history %}
+        {% set snapshot = snapshots[row.snapshotId] ?? null %}
+        <section class="consentmate-history-item">
+            <h2>{{ row.dateCreated|datetime('short') }}: {{ row.action }}</h2>
+            <table class="data">
+                <tbody>
+                    <tr><th scope="row">{{ 'Categories'|t('consentmate') }}</th><td>{{ row.categories|join(', ') }}</td></tr>
+                    <tr><th scope="row">{{ 'Site'|t('app') }}</th><td>{{ (sites.getSiteById(row.siteId, true).name ?? row.siteId)|t('site') }}</td></tr>
+                    <tr><th scope="row">{{ 'Page'|t('consentmate') }}</th><td><code>{{ row.path }}</code></td></tr>
+                    <tr><th scope="row">{{ 'Language'|t('consentmate') }}</th><td>{{ row.language }}</td></tr>
+                    <tr><th scope="row">{{ 'Revision'|t('consentmate') }}</th><td>{{ row.revision }}</td></tr>
+                    <tr><th scope="row">{{ 'Global Privacy Control'|t('consentmate') }}</th><td>{{ row.gpc ? 'Yes'|t('app') : 'No'|t('app') }}</td></tr>
+                    {% if row.userAgent %}
+                        <tr><th scope="row">{{ 'User agent'|t('consentmate') }}</th><td><code>{{ row.userAgent }}</code></td></tr>
+                    {% endif %}
+                    {% if row.ipHash %}
+                        <tr><th scope="row">{{ 'IP hash'|t('consentmate') }}</th><td><code>{{ row.ipHash }}</code></td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+
+            {% if snapshot %}
+                <details>
+                    <summary>{{ 'What the visitor was shown'|t('consentmate') }}</summary>
+                    <div class="readable">
+                        <h3>{{ snapshot.texts.bannerHeading ?? '' }}</h3>
+                        <p>{{ (snapshot.texts.bannerBody ?? '')|nl2br }}</p>
+                        {% if snapshot.texts.policyUrl ?? false %}
+                            <p><a href="{{ snapshot.texts.policyUrl }}" target="_blank" rel="noopener">{{ snapshot.texts.policyLinkLabel ?? snapshot.texts.policyUrl }}</a></p>
+                        {% endif %}
+                        {% for category in snapshot.categories ?? [] %}
+                            <h4>
+                                {{ category.name }}
+                                {% if category.handle in row.categories %}
+                                    <span class="status-label green"><span class="status green"></span><span class="status-label-text">{{ 'Granted'|t('consentmate') }}</span></span>
+                                {% else %}
+                                    <span class="status-label"><span class="status"></span><span class="status-label-text">{{ 'Not granted'|t('consentmate') }}</span></span>
+                                {% endif %}
+                            </h4>
+                            <p>{{ category.description }}</p>
+                            {% if category.services|length %}
+                                <ul>
+                                    {% for service in category.services %}
+                                        <li>
+                                            <strong>{{ service.title }}</strong>{% if service.provider %} ({{ service.provider }}){% endif %}
+                                            {% if service.cookies|length %}
+                                                <br><span class="light">{{ service.cookies|map(c => c.name ~ ' (' ~ c.duration ~ ')')|join(', ') }}</span>
+                                            {% endif %}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </details>
+            {% else %}
+                <p class="light">{{ 'No snapshot was stored for this consent.'|t('consentmate') }}</p>
+            {% endif %}
+        </section>
+        {% if not loop.last %}<hr>{% endif %}
+    {% endfor %}
+{% endblock %}

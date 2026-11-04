@@ -1,0 +1,76 @@
+{#
+ # Per-site banner and category copy. Values equal to the default aren't
+ # stored, so they follow later changes to the defaults.
+ #}
+{% extends '_layouts/cp.twig' %}
+{% import '_includes/forms.twig' as forms %}
+
+{% set title = 'Texts'|t('consentmate') %}
+{% set selectedSubnavItem = 'texts' %}
+{% set fullPageForm = true %}
+
+{% set editableSites = craft.app.sites.getEditableSites() %}
+{% if editableSites|length > 1 %}
+    {% set crumbs = [{
+        id: 'site-crumb',
+        icon: 'world',
+        iconAltText: 'Site'|t('app'),
+        label: site.name|t('site'),
+        menu: {
+            items: siteMenuItems(editableSites, site),
+            label: 'Select site'|t('app'),
+        },
+    }] %}
+{% endif %}
+
+{% block content %}
+    {{ actionInput('consentmate/texts/save') }}
+    {{ redirectInput('consentmate/texts?site=' ~ site.handle) }}
+    {{ hiddenInput('siteId', site.id) }}
+
+    <p class="light">
+        {{ 'The copy visitors see in the consent banner and settings on {site}. Empty fields fall back to the default text.'|t('consentmate', { site: site.name|t('site') }) }}
+    </p>
+
+    {% for groupKey, group in fieldDefinitions %}
+        <h2>{{ group.heading }}</h2>
+        {% for key, field in group.fields %}
+            {% set config = {
+                label: field.label,
+                instructions: field.instructions ?? null,
+                id: key,
+                name: "texts[#{key}]",
+                value: texts[key] ?? '',
+                placeholder: defaults[key] ?? '',
+            } %}
+            {% if field.type == 'textarea' %}
+                {{ forms.textareaField(config|merge({ rows: 4 })) }}
+            {% else %}
+                {{ forms.textField(config) }}
+            {% endif %}
+        {% endfor %}
+        <hr>
+    {% endfor %}
+
+    <h2>{{ 'Categories'|t('consentmate') }}</h2>
+    <p class="light">{{ 'The categories are set up by the developer. Describe what each one is used for on this website.'|t('consentmate') }}</p>
+
+    {% for category in categories %}
+        <h3>{{ category.name }} <code class="light">{{ category.handle }}</code></h3>
+        {{ forms.textField({
+            label: 'Name'|t('consentmate'),
+            id: "category-#{category.handle}-name",
+            name: "texts[categories][#{category.handle}][name]",
+            value: category.name,
+            placeholder: defaults.categories[category.handle].name ?? '',
+        }) }}
+        {{ forms.textareaField({
+            label: 'Description'|t('consentmate'),
+            id: "category-#{category.handle}-description",
+            name: "texts[categories][#{category.handle}][description]",
+            value: category.description,
+            placeholder: defaults.categories[category.handle].description ?? '',
+            rows: 3,
+        }) }}
+    {% endfor %}
+{% endblock %}

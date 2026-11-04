@@ -1,0 +1,40 @@
+{#
+ # The cookie declaration, for a privacy or cookie policy page:
+ #
+ #   {{ craft.consentmate.declaration() }}
+ #   {{ craft.consentmate.declaration({ headingLevel: 3 }) }}
+ #
+ # The status block is filled in by the runtime with the visitor's current
+ # consent, and has buttons to change or withdraw it.
+ #
+ # Variables: texts, categories (each with its services), options.
+ #}
+{% set headingLevel = options.headingLevel ?? 2 %}
+<div class="consentmate-declaration">
+    <div class="consentmate-declaration-status" data-consentmate-status>
+        <p data-consentmate-status-none>{{ 'You have not made a choice about cookies on this website yet.'|t('consentmate') }}</p>
+        <p data-consentmate-status-given hidden>
+            {{ 'You allow'|t('consentmate') }}: <span data-consentmate-status-categories></span><br>
+            {{ 'Given'|t('consentmate') }}: <span data-consentmate-status-date></span><br>
+            {{ 'Your consent ID'|t('consentmate') }}: <code data-consentmate-status-id></code>
+        </p>
+        <p class="consentmate-buttons">
+            <button type="button" class="consentmate-button" data-consentmate-open>{{ 'Change your choices'|t('consentmate') }}</button>
+            <button type="button" class="consentmate-button" data-consentmate-action="reject-all">{{ 'Withdraw consent'|t('consentmate') }}</button>
+        </p>
+    </div>
+
+    {% for category in categories %}
+        <section class="consentmate-declaration-category">
+            {{ tag("h#{min(headingLevel, 6)}", { text: category.name }) }}
+            {% if category.description %}
+                <p>{{ category.description }}</p>
+            {% endif %}
+            {% for service in category.services %}
+                {% include 'consentmate/_frontend/_service.twig' with { service, headingLevel: headingLevel + 1 } only %}
+            {% else %}
+                <p>{{ 'No services in this category.'|t('consentmate') }}</p>
+            {% endfor %}
+        </section>
+    {% endfor %}
+</div>

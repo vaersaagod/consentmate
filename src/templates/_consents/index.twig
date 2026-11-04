@@ -1,0 +1,143 @@
+{#
+ # The consent log: search by consent ID, newest first.
+ #}
+{% extends '_layouts/cp.twig' %}
+
+{% set title = 'Consent log'|t('consentmate') %}
+{% set selectedSubnavItem = 'consents' %}
+
+{% set actionLabels = {
+    'accept-all': 'Accepted all'|t('consentmate'),
+    'reject-all': 'Rejected all'|t('consentmate'),
+    'custom': 'Chose categories'|t('consentmate'),
+    'placeholder': 'Allowed from a placeholder'|t('consentmate'),
+    'withdraw': 'Withdrew consent'|t('consentmate'),
+} %}
+
+{% block content %}
+    {% if not logSettings.enabled %}
+        <div class="readable">
+            <p class="warning with-icon">{{ 'The consent log is turned off in the config, so new consents aren\'t logged.'|t('consentmate') }}</p>
+        </div>
+    {% endif %}
+
+    <section aria-labelledby="consentmate-summary-heading">
+        <h2 id="consentmate-summary-heading">{{ 'Last 30 days'|t('consentmate') }}</h2>
+        <dl class="consentmate-summary">
+            <div>
+                <dt>{{ 'Consents'|t('consentmate') }}</dt>
+                <dd>{{ summary.total|number }}</dd>
+            </div>
+            {% for action, count in summary.actions %}
+                <div>
+                    <dt>{{ actionLabels[action] ?? action }}</dt>
+                    <dd>
+                        {{ count|number }}
+                        {% if summary.total %}
+                            <span class="light">({{ (count / summary.total * 100)|round }}%)</span>
+                        {% endif %}
+                    </dd>
+                </div>
+            {% endfor %}
+        </dl>
+    </section>
+
+    <hr>
+
+    <form method="get" class="flex" role="search">
+        <div class="flex-grow texticon has-filter-btn">
+            <span class="texticon-icon search icon" aria-hidden="true"></span>
+            <input type="search" class="text fullwidth" name="q" value="{{ search }}" placeholder="{{ 'Search by consent ID'|t('consentmate') }}" aria-label="{{ 'Search by consent ID'|t('consentmate') }}">
+        </div>
+        <div class="select">
+            <select name="action" aria-label="{{ 'Action'|t('consentmate') }}">
+                <option value="">{{ 'All actions'|t('consentmate') }}</option>
+                {% for action in actions %}
+                    <option value="{{ action }}" {{ action == selectedAction ? 'selected' }}>{{ actionLabels[action] ?? action }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn">{{ 'Search'|t('app') }}</button>
+    </form>
+
+    {% if rows|length %}
+        <div class="tableview">
+            <table class="data fullwidth">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'Date'|t('consentmate') }}</th>
+                        <th scope="col">{{ 'Consent ID'|t('consentmate') }}</th>
+                        <th scope="col">{{ 'Action'|t('consentmate') }}</th>
+                        <th scope="col">{{ 'Categories'|t('consentmate') }}</th>
+                        <th scope="col">{{ 'Site'|t('app') }}</th>
+                        <th scope="col">{{ 'Page'|t('consentmate') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td>{{ row.dateCreated|datetime('short') }}</td>
+                            <td><a href="{{ cpUrl('consentmate/consents/' ~ row.consentId) }}"><code>{{ row.consentId }}</code></a></td>
+                            <td>
+                                {{ actionLabels[row.action] ?? row.action }}
+                                {% if row.gpc %}<span class="light">(GPC)</span>{% endif %}
+                            </td>
+                            <td>{{ row.categories|join(', ') }}</td>
+                            <td>{{ (craft.app.sites.getSiteById(row.siteId, true).name ?? row.siteId)|t('site') }}</td>
+                            <td><code class="light">{{ row.path }}</code></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if totalPages > 1 %}
+            {% set baseParams = { q: search ?: null, action: selectedAction ?: null }|filter(v => v is not null) %}
+            <nav class="flex" aria-label="{{ 'Pagination'|t('app') }}" style="margin-top: 1rem;">
+                {% if page > 1 %}
+                    <a class="btn" href="{{ cpUrl('consentmate/consents', baseParams|merge({ page: page - 1 })) }}">{{ 'Previous'|t('consentmate') }}</a>
+                {% endif %}
+                <span class="light">{{ 'Page {page} of {total}'|t('consentmate', { page: page, total: totalPages }) }}</span>
+                {% if page < totalPages %}
+                    <a class="btn" href="{{ cpUrl('consentmate/consents', baseParams|merge({ page: page + 1 })) }}">{{ 'Next'|t('consentmate') }}</a>
+                {% endif %}
+            </nav>
+        {% endif %}
+    {% else %}
+        <p class="zilch">{{ search or selectedAction ? 'No consents match.'|t('consentmate') : 'No consents logged yet.'|t('consentmate') }}</p>
+    {% endif %}
+
+    <hr>
+
+    <section aria-labelledby="consentmate-revisions-heading">
+        <h2 id="consentmate-revisions-heading">{{ 'Revisions'|t('consentmate') }}</h2>
+        <p class="light">{{ 'Consent is given for a revision. Visitors are asked again when the revision changes.'|t('consentmate') }}</p>
+        <table class="data">
+            <thead>
+                <tr>
+                    <th scope="col">{{ 'Revision'|t('consentmate') }}</th>
+                    <th scope="col">{{ 'Date'|t('consentmate') }}</th>
+                    <th scope="col">{{ 'Reason'|t('consentmate') }}</th>
+                    <th scope="col">{{ 'User'|t('app') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for revision in revisions %}
+                    <tr>
+                        <td>{{ revision.id }}</td>
+                        <td>{{ revision.dateCreated|datetime('short') }}</td>
+                        <td>{{ revision.reason }}</td>
+                        <td>{{ revision.username ?? '' }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+{% endblock %}
+
+{% css %}
+.consentmate-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--m, 1rem); margin: 0; }
+.consentmate-summary div { padding: var(--s, .5rem) var(--m, 1rem); border-radius: var(--large-border-radius, 5px); background: var(--gray-050); }
+.consentmate-summary dt { color: var(--light-text-color); font-size: .9em; }
+.consentmate-summary dd { margin: 0; font-size: 1.4em; font-weight: 600; }
+{% endcss %}

@@ -1,0 +1,60 @@
+{#
+ # One service, with its provider, purpose and cookies. Used by the settings
+ # dialog and the cookie declaration.
+ #
+ # Variables: service, headingLevel.
+ #}
+{% set headingTag = "h#{min(headingLevel ?? 3, 6)}" %}
+<div class="consentmate-service">
+    {{ tag(headingTag, { class: 'consentmate-service-name', text: service.title }) }}
+    <dl>
+        {% if service.provider %}
+            <dt>{{ 'Provider'|t('consentmate') }}</dt>
+            <dd>{{ service.provider }}</dd>
+        {% endif %}
+        {% if service.description %}
+            <dt>{{ 'Purpose'|t('consentmate') }}</dt>
+            <dd>{{ service.description|nl2br }}</dd>
+        {% endif %}
+        {% if service.dataTransfers %}
+            <dt>{{ 'Data transfers'|t('consentmate') }}</dt>
+            <dd>{{ service.dataTransfers }}</dd>
+        {% endif %}
+        {% if service.privacyPolicyUrl %}
+            <dt>{{ 'Privacy policy'|t('consentmate') }}</dt>
+            <dd><a href="{{ service.privacyPolicyUrl }}" target="_blank" rel="noopener">{{ service.privacyPolicyUrl|replace('/^https?:\\/\\/(www\\.)?/', '')|trim('/') }}</a></dd>
+        {% endif %}
+    </dl>
+    {% if service.cookies|length %}
+        {# Only the built-in cookies (and custom necessaryCookies) have a purpose per cookie #}
+        {% set showPurpose = service.cookies|filter(cookie => cookie.purposeLabel ?? false)|length > 0 %}
+        <div class="consentmate-table-wrapper">
+            <table class="consentmate-cookies">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'Name'|t('consentmate') }}</th>
+                        {% if showPurpose %}
+                            <th scope="col">{{ 'Purpose'|t('consentmate') }}</th>
+                        {% endif %}
+                        <th scope="col">{{ 'Type'|t('consentmate') }}</th>
+                        <th scope="col">{{ 'Set by'|t('consentmate') }}</th>
+                        <th scope="col">{{ 'Duration'|t('consentmate') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cookie in service.cookies %}
+                        <tr>
+                            <td><code>{{ cookie.name }}</code></td>
+                            {% if showPurpose %}
+                                <td>{{ cookie.purposeLabel ?? '' }}</td>
+                            {% endif %}
+                            <td>{{ cookie.typeLabel }}</td>
+                            <td>{{ cookie.partyLabel }}</td>
+                            <td>{{ cookie.durationLabel }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>

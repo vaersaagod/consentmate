@@ -1,0 +1,114 @@
+{#
+ # ConsentMate banner, settings dialog and floating button.
+ #
+ # To change the markup, copy this template into your project and point the
+ # `bannerTemplate` setting at it. The runtime finds its way around through
+ # the data-consentmate-* attributes, so keep those:
+ #
+ # - [data-consentmate-root]      wraps everything below
+ # - [data-consentmate-banner]    the first layer; the runtime toggles `hidden`
+ # - [data-consentmate-dialog]    the settings <dialog>
+ # - [data-consentmate-category]  a checkbox per category, value = handle
+ # - [data-consentmate-action]    accept-all, reject-all, settings, save, close
+ # - [data-consentmate-open]      anything that opens the settings
+ # - [data-consentmate-gpc]       shown when Global Privacy Control is on
+ # - [data-consentmate-status]    filled in with the visitor's consent
+ #
+ # Variables: texts, categories (each with its services), showGoogleNotice,
+ # googlePrivacyUrl, floatingButton.
+ #}
+<div class="consentmate" data-consentmate-root>
+    <section class="consentmate-banner" data-consentmate-banner aria-labelledby="consentmate-banner-heading" hidden>
+        <h2 id="consentmate-banner-heading" class="consentmate-heading">{{ texts.bannerHeading }}</h2>
+        <div class="consentmate-text">
+            <p>{{ texts.bannerBody|nl2br }}</p>
+            {% if showGoogleNotice and texts.googleNotice %}
+                <p>
+                    {{ texts.googleNotice|nl2br }}
+                    <a href="{{ googlePrivacyUrl }}" target="_blank" rel="noopener">{{ 'How Google uses data'|t('consentmate') }}</a>
+                </p>
+            {% endif %}
+            {% if texts.policyUrl %}
+                <p><a href="{{ texts.policyUrl }}">{{ texts.policyLinkLabel }}</a></p>
+            {% endif %}
+        </div>
+        <div class="consentmate-buttons">
+            <button type="button" class="consentmate-button" data-consentmate-action="accept-all">{{ texts.acceptAll }}</button>
+            <button type="button" class="consentmate-button" data-consentmate-action="reject-all">{{ texts.rejectAll }}</button>
+            <button type="button" class="consentmate-button" data-consentmate-action="settings" aria-haspopup="dialog">{{ texts.openSettings }}</button>
+        </div>
+    </section>
+
+    <dialog class="consentmate-dialog" data-consentmate-dialog aria-labelledby="consentmate-settings-heading">
+        <form method="dialog" class="consentmate-dialog-form">
+            <div class="consentmate-dialog-header">
+                <h2 id="consentmate-settings-heading" class="consentmate-heading">{{ texts.settingsHeading }}</h2>
+                <button type="button" class="consentmate-close" data-consentmate-action="close" aria-label="{{ 'Close'|t('consentmate') }}">&times;</button>
+            </div>
+
+            <div class="consentmate-dialog-body">
+                <p class="consentmate-text">{{ texts.settingsBody|nl2br }}</p>
+
+                <p class="consentmate-notice" data-consentmate-gpc hidden>
+                    <strong>{{ 'Opt-out preference signal honored'|t('consentmate') }}</strong><br>
+                    {{ texts.gpcNotice }}
+                </p>
+
+                <ul class="consentmate-categories">
+                    {% for category in categories %}
+                        {% set inputId = "consentmate-category-#{category.handle}" %}
+                        <li class="consentmate-category">
+                            <div class="consentmate-category-header">
+                                <label class="consentmate-category-name" for="{{ inputId }}">{{ category.name }}</label>
+                                {% if category.required %}
+                                    <span class="consentmate-always-on">{{ 'Always on'|t('consentmate') }}</span>
+                                {% endif %}
+                                {{ tag('input', {
+                                    type: 'checkbox',
+                                    role: 'switch',
+                                    class: 'consentmate-switch',
+                                    id: inputId,
+                                    checked: category.required,
+                                    disabled: category.required,
+                                    'aria-describedby': category.description ? "#{inputId}-description" : false,
+                                    data: { 'consentmate-category': category.handle },
+                                }) }}
+                            </div>
+                            {% if category.description %}
+                                <p id="{{ inputId }}-description" class="consentmate-category-description">{{ category.description }}</p>
+                            {% endif %}
+                            {% if category.services|length %}
+                                <details class="consentmate-services">
+                                    <summary>{{ 'Show services ({count})'|t('consentmate', { count: category.services|length }) }}</summary>
+                                    {% for service in category.services %}
+                                        {% include 'consentmate/_frontend/_service.twig' with { service, headingLevel: 3 } only %}
+                                    {% endfor %}
+                                </details>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+
+                <p class="consentmate-consent-info" data-consentmate-status>
+                    <span data-consentmate-status-given hidden>
+                        {{ 'Your consent ID'|t('consentmate') }}: <code data-consentmate-status-id></code>
+                    </span>
+                </p>
+            </div>
+
+            <div class="consentmate-dialog-footer">
+                <div class="consentmate-buttons">
+                    <button type="button" class="consentmate-button" data-consentmate-action="accept-all">{{ texts.acceptAll }}</button>
+                    <button type="button" class="consentmate-button" data-consentmate-action="reject-all">{{ texts.rejectAll }}</button>
+                    <button type="button" class="consentmate-button" data-consentmate-action="save">{{ texts.saveSettings }}</button>
+                </div>
+            </div>
+        </form>
+    </dialog>
+
+    {% if floatingButton %}
+        <button type="button" class="consentmate-floating" data-consentmate-floating data-consentmate-open aria-label="{{ texts.floatingButtonLabel }}" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-4.5-4.5A4 4 0 0 1 12 2zm-3.5 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm6 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm-7 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3-3.5a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>
+        </button>
+    {% endif %}
+</div>

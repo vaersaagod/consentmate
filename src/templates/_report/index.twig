@@ -1,0 +1,169 @@
+{#
+ # The cookie report: cookies set without consent, and cookies no service
+ # declares. Found in the cookies visitors' browsers send when they save
+ # their consent.
+ #}
+{% extends '_layouts/cp.twig' %}
+{% import '_includes/forms.twig' as forms %}
+
+{% set title = 'Cookie report'|t('consentmate') %}
+{% set selectedSubnavItem = 'report' %}
+
+{% macro seen(report) %}
+    {{ 'Seen {count, plural, =1{once} other{# times}}, last {date}'|t('consentmate', {
+        count: report.hits,
+        date: report.lastSeen|datetime('short'),
+    }) }}
+    {% if report.lastPath %}
+        <br><span class="light">{{ 'on'|t('consentmate') }} <code>{{ report.lastPath }}</code></span>
+    {% endif %}
+{% endmacro %}
+
+{% macro actions(report, showIgnored) %}
+    <div class="flex">
+        <form method="post">
+            {{ csrfInput() }}
+            {{ actionInput('consentmate/cookie-report/ignore') }}
+            {{ redirectInput('consentmate/report' ~ (showIgnored ? '?ignored=1' : '')) }}
+            {{ hiddenInput('id', report.id) }}
+            {{ hiddenInput('ignored', showIgnored ? '0' : '1') }}
+            <button type="submit" class="btn small">{{ showIgnored ? 'Stop ignoring'|t('consentmate') : 'Ignore'|t('consentmate') }}</button>
+        </form>
+        <form method="post">
+            {{ csrfInput() }}
+            {{ actionInput('consentmate/cookie-report/delete') }}
+            {{ redirectInput('consentmate/report' ~ (showIgnored ? '?ignored=1' : '')) }}
+            {{ hiddenInput('id', report.id) }}
+            <button type="submit" class="btn small">{{ 'Clear'|t('consentmate') }}</button>
+        </form>
+    </div>
+{% endmacro %}
+
+{% block content %}
+    {% if not enabled %}
+        <p class="warning with-icon">{{ 'The cookie report is turned off in the config.'|t('consentmate') }}</p>
+    {% endif %}
+
+    <div class="readable">
+        <p>
+            {{ 'When visitors save their consent, their browser sends the cookies this website has set. They\'re compared with the cookies your services declare. Cookies set by other websites (like YouTube) are never sent here, so they can\'t be checked.'|t('consentmate') }}
+        </p>
+        <p>
+            {% if showIgnored %}
+                <a href="{{ cpUrl('consentmate/report') }}">{{ 'Show the report'|t('consentmate') }}</a>
+            {% else %}
+                <a href="{{ cpUrl('consentmate/report', { ignored: 1 }) }}">{{ 'Show ignored cookies'|t('consentmate') }}</a>
+            {% endif %}
+        </p>
+    </div>
+
+    {% if showIgnored %}
+        <h2>{{ 'Ignored cookies'|t('consentmate') }}</h2>
+    {% endif %}
+
+    {% if not leaks|length and not undeclared|length %}
+        <p class="zilch">{{ showIgnored ? 'No ignored cookies.'|t('consentmate') : 'No problems found.'|t('consentmate') }}</p>
+    {% endif %}
+
+    {% if leaks|length %}
+        {% if not showIgnored %}
+            <h2>{{ 'Set without consent'|t('consentmate') }}</h2>
+            <p class="error with-icon">
+                {{ 'These cookies belong to a category the visitor had not allowed. Something sets them before consent, usually a script added straight to a template instead of to a service or inside the consent tag. Remove or gate the script, then clear the report.'|t('consentmate') }}
+            </p>
+        {% endif %}
+        <div class="tableview">
+            <table class="data fullwidth">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'Cookie'|t('consentmate') }}</th>
+                        <th scope="col">{{ 'Declared by'|t('consentmate') }}</th>
+                        <th scope="col">{{ 'Site'|t('app') }}</th>
+                        <th scope="col">{{ 'Seen'|t('consentmate') }}</th>
+                        <th scope="col"><span class="visually-hidden">{{ 'Actions'|t('app') }}</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in leaks %}
+                        <tr>
+                            <td><code>{{ report.name }}</code></td>
+                            <td>
+                                {% if report.serviceId %}
+                                    <a href="{{ cpUrl('consentmate/services/' ~ report.serviceId) }}">{{ report.serviceTitle ?? report.serviceId }}</a>
+                                {% else %}
+                                    {{ 'This website'|t('consentmate') }}
+                                {% endif %}
+                                <span class="light">({{ craft.consentmate.categories()[report.category].name ?? report.category }})</span>
+                            </td>
+                            <td>{{ (craft.app.sites.getSiteById(report.siteId, true).name ?? report.siteId)|t('site') }}</td>
+                            <td>{{ _self.seen(report) }}</td>
+                            <td>{{ _self.actions(report, showIgnored) }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+    {% if undeclared|length %}
+        {% if not showIgnored %}
+            <h2>{{ 'Not declared'|t('consentmate') }}</h2>
+            <p class="light">
+                {{ 'No service declares these cookies, so visitors aren\'t told about them. Add each one to the service that sets it, or ignore it if it isn\'t set for visitors.'|t('consentmate') }}
+            </p>
+        {% endif %}
+        <div class="tableview">
+            <table class="data fullwidth">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'Cookie'|t('consentmate') }}</th>
+                        <th scope="col">{{ 'Site'|t('app') }}</th>
+                        <th scope="col">{{ 'Seen'|t('consentmate') }}</th>
+                        <th scope="col">{{ 'Add to service'|t('consentmate') }}</th>
+                        <th scope="col"><span class="visually-hidden">{{ 'Actions'|t('app') }}</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in undeclared %}
+                        <tr>
+                            <td><code>{{ report.name }}</code></td>
+                            <td>{{ (craft.app.sites.getSiteById(report.siteId, true).name ?? report.siteId)|t('site') }}</td>
+                            <td>{{ _self.seen(report) }}</td>
+                            <td>
+                                {# A known cookie with no service yet: offer to create one from the preset #}
+                                {% if report.preset and not report.suggestedServiceId %}
+                                    <form method="post" class="flex">
+                                        {{ csrfInput() }}
+                                        {{ actionInput('elements/create') }}
+                                        {{ hiddenInput('elementType', serviceElementType) }}
+                                        {{ hiddenInput('siteId', report.siteId) }}
+                                        {{ hiddenInput('preset', report.preset.handle) }}
+                                        <span>{{ 'Looks like {name}.'|t('consentmate', { name: report.preset.name|t('consentmate') }) }}</span>
+                                        <button type="submit" class="btn small">{{ 'Create service'|t('consentmate') }}</button>
+                                    </form>
+                                {% endif %}
+                                {% if services|length %}
+                                    <form method="post" class="flex">
+                                        {{ csrfInput() }}
+                                        {{ actionInput('consentmate/cookie-report/add-to-service') }}
+                                        {{ hiddenInput('id', report.id) }}
+                                        {{ forms.select({
+                                            name: 'serviceId',
+                                            options: services,
+                                            value: report.suggestedServiceId,
+                                            inputAttributes: { 'aria-label': 'Service for {name}'|t('consentmate', { name: report.name }) },
+                                        }) }}
+                                        <button type="submit" class="btn small">{{ 'Add'|t('consentmate') }}</button>
+                                    </form>
+                                {% elseif not report.preset %}
+                                    <a href="{{ cpUrl('consentmate/services') }}">{{ 'Add a service first'|t('consentmate') }}</a>
+                                {% endif %}
+                            </td>
+                            <td>{{ _self.actions(report, showIgnored) }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}

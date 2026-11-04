@@ -1,0 +1,15 @@
+{#
+ # Shown instead of gated content until its category is granted.
+ #
+ # To change the markup, copy this template and point the
+ # `placeholderTemplate` setting (or the `placeholder` option) at it. Keep
+ # [data-consentmate-placeholder] (removed once the content is shown) and
+ # [data-consentmate-accept] (grants the category).
+ #
+ # Variables: category, categoryName, provider, text, texts, options.
+ #}
+<div class="consentmate-placeholder" data-consentmate-placeholder>
+    <p>{{ text }}</p>
+    <button type="button" class="consentmate-button" data-consentmate-accept="{{ category }}">{{ texts.placeholderAccept }}</button>
+    <button type="button" class="consentmate-link-button" data-consentmate-open>{{ texts.floatingButtonLabel }}</button>
+</div>
